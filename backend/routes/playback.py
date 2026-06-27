@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
@@ -28,7 +29,7 @@ class ProgressBody(BaseModel):
     media_file_id: int
     position_seconds: float
     duration_seconds: float = 0.0
-    event: str | None = None  # explicit 'start'|'abandon'; else inferred
+    event: Literal["start", "abandon", "progress", "finish"] | None = None
 
 
 def _resolve_media_path(media_file_id: int) -> Path:

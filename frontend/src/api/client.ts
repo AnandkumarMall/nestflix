@@ -201,4 +201,13 @@ export const api = {
     get<{ profile_id: number; items: ContinueItem[] }>(
       `/playback/continue?profile_id=${profileId}`,
     ),
+
+  saveProgressBeacon: (body: {
+    profile_id: number;
+    media_file_id: number;
+    position_seconds: number;
+    duration_seconds: number;
+  }) => {
+    navigator.sendBeacon(`${BASE}/playback/progress`, JSON.stringify(body));
+  },
 };
