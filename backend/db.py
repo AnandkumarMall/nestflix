@@ -140,7 +140,7 @@ def get_library() -> dict:
         movies = [dict(r) for r in conn.execute("""
                 SELECT m.id, m.tmdb_id, m.parsed_title, m.title, m.year, m.overview,
                        m.poster_path, m.backdrop_path, m.rating, m.runtime, m.genres,
-                       m.match_status, f.path, f.container
+                       m.match_status, f.id AS media_file_id, f.path, f.container
                 FROM movies m
                 JOIN media_files f ON f.id = m.media_file_id
                 ORDER BY COALESCE(m.title, m.parsed_title)
@@ -158,7 +158,7 @@ def get_library() -> dict:
                 for r in conn.execute(
                     """
                     SELECT e.id, e.season, e.episode, e.title, e.overview, e.still_path,
-                           f.path, f.container
+                           f.id AS media_file_id, f.path, f.container
                     FROM episodes e
                     JOIN media_files f ON f.id = e.media_file_id
                     WHERE e.show_id = ?
@@ -292,6 +292,150 @@ def get_movie(conn: sqlite3.Connection, movie_id: int) -> sqlite3.Row | None:
     return conn.execute(
         "SELECT id, parsed_title, year FROM movies WHERE id = ?", (movie_id,)
     ).fetchone()
+
+
+# ---------------------------------------------------------------------------
+# Playback: stream resolution, resume progress, and Continue Watching.
+# ---------------------------------------------------------------------------
+
+
+def get_media_file(conn: sqlite3.Connection, media_file_id: int) -> sqlite3.Row | None:
+    """Fetch a media file row (path/container/kind) for streaming."""
+    return conn.execute(
+        "SELECT id, path, container, kind, size FROM media_files WHERE id = ?",
+        (media_file_id,),
+    ).fetchone()
+
+
+def get_media_display(conn: sqlite3.Connection, media_file_id: int) -> dict | None:
+    """Title/artwork for a media file (movie or episode), for the player header + rows."""
+    movie = conn.execute(
+        """
+        SELECT title, parsed_title, year, poster_path, backdrop_path
+        FROM movies WHERE media_file_id = ?
+        """,
+        (media_file_id,),
+    ).fetchone()
+    if movie is not None:
+        return {
+            "kind": "movie",
+            "title": movie["title"] or movie["parsed_title"],
+            "year": movie["year"],
+            "poster_path": movie["poster_path"],
+            "backdrop_path": movie["backdrop_path"],
+        }
+
+    episode = conn.execute(
+        """
+        SELECT e.season, e.episode, e.title AS episode_title, e.still_path,
+               s.title AS show_title, s.parsed_title, s.poster_path, s.backdrop_path
+        FROM episodes e
+        JOIN shows s ON s.id = e.show_id
+        WHERE e.media_file_id = ?
+        """,
+        (media_file_id,),
+    ).fetchone()
+    if episode is not None:
+        return {
+            "kind": "episode",
+            "title": episode["show_title"] or episode["parsed_title"],
+            "season": episode["season"],
+            "episode": episode["episode"],
+            "episode_title": episode["episode_title"],
+            "poster_path": episode["poster_path"],
+            "backdrop_path": episode["backdrop_path"],
+            "still_path": episode["still_path"],
+        }
+    return None
+
+
+def get_watch_progress(
+    conn: sqlite3.Connection, profile_id: int, media_file_id: int
+) -> sqlite3.Row | None:
+    """Resume position for one (profile, media file), or None if never watched."""
+    return conn.execute(
+        """
+        SELECT position_seconds, duration_seconds, completed
+        FROM watch_progress
+        WHERE profile_id = ? AND media_file_id = ?
+        """,
+        (profile_id, media_file_id),
+    ).fetchone()
+
+
+def upsert_watch_progress(
+    conn: sqlite3.Connection,
+    profile_id: int,
+    media_file_id: int,
+    position_seconds: float,
+    duration_seconds: float,
+    completed: bool,
+) -> None:
+    """Insert or update the resume position for a (profile, media file)."""
+    conn.execute(
+        """
+        INSERT INTO watch_progress
+            (profile_id, media_file_id, position_seconds, duration_seconds, completed,
+             updated_at)
+        VALUES (?, ?, ?, ?, ?, datetime('now'))
+        ON CONFLICT(profile_id, media_file_id) DO UPDATE SET
+            position_seconds = excluded.position_seconds,
+            duration_seconds = excluded.duration_seconds,
+            completed = excluded.completed,
+            updated_at = excluded.updated_at
+        """,
+        (
+            profile_id,
+            media_file_id,
+            position_seconds,
+            duration_seconds,
+            int(completed),
+        ),
+    )
+
+
+def record_watch_event(
+    conn: sqlite3.Connection,
+    profile_id: int,
+    media_file_id: int,
+    event: str,
+    pct: float,
+) -> None:
+    """Append a behavioral event (start/progress/finish/abandon) for the taste model."""
+    conn.execute(
+        """
+        INSERT INTO watch_events (profile_id, media_file_id, event, pct)
+        VALUES (?, ?, ?, ?)
+        """,
+        (profile_id, media_file_id, event, pct),
+    )
+
+
+def get_continue_watching(conn: sqlite3.Connection, profile_id: int) -> list[dict]:
+    """In-progress (not completed) titles for the Continue Watching row, newest first."""
+    rows = conn.execute(
+        """
+        SELECT wp.media_file_id, wp.position_seconds, wp.duration_seconds, wp.updated_at
+        FROM watch_progress wp
+        WHERE wp.profile_id = ? AND wp.completed = 0 AND wp.position_seconds > 0
+        ORDER BY wp.updated_at DESC
+        """,
+        (profile_id,),
+    ).fetchall()
+    items: list[dict] = []
+    for row in rows:
+        display = get_media_display(conn, row["media_file_id"])
+        if display is None:
+            continue  # file removed since last watch — skip gracefully
+        items.append(
+            {
+                "media_file_id": row["media_file_id"],
+                "position_seconds": row["position_seconds"],
+                "duration_seconds": row["duration_seconds"],
+                **display,
+            }
+        )
+    return items
 
 
 if __name__ == "__main__":  # `python -m backend.db` initializes the database.
