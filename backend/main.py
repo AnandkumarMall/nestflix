@@ -15,9 +15,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from . import tmdb
 from .config import settings
 from .db import init_db
-from .routes import discovery, library, playback, profiles, recommendations
+from .routes import discovery, images, library, playback, profiles, recommendations
 
 
 @asynccontextmanager
@@ -25,6 +26,8 @@ async def lifespan(app: FastAPI):
     # Ensure the database exists and is migrated before serving requests.
     init_db()
     yield
+    # Release the shared TMDB HTTP client on shutdown.
+    await tmdb.aclose()
 
 
 app = FastAPI(title="Nestflix", version="0.1.0", lifespan=lifespan)
@@ -43,6 +46,7 @@ app.include_router(library.router)
 app.include_router(playback.router)
 app.include_router(recommendations.router)
 app.include_router(discovery.router)
+app.include_router(images.router)
 
 
 @app.get("/api/health")

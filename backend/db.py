@@ -6,6 +6,7 @@ recommender package). Connections enable foreign keys and return dict-like rows.
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from pathlib import Path
 
@@ -173,6 +174,124 @@ def get_library() -> dict:
         return {"movies": movies, "shows": shows}
     finally:
         conn.close()
+
+
+# ---------------------------------------------------------------------------
+# TMDB response cache (used only by backend.tmdb).
+# ---------------------------------------------------------------------------
+
+
+def tmdb_cache_get(cache_key: str, max_age_hours: float | None = None) -> dict | None:
+    """Return a cached TMDB response (parsed) or None if missing/stale.
+
+    `max_age_hours=None` ignores age (cache forever); a number treats entries older
+    than that as a miss so callers re-fetch slowly-changing data like trending.
+    """
+    conn = get_db()
+    try:
+        if max_age_hours is None:
+            row = conn.execute(
+                "SELECT response FROM tmdb_cache WHERE cache_key = ?", (cache_key,)
+            ).fetchone()
+        else:
+            row = conn.execute(
+                """
+                SELECT response FROM tmdb_cache
+                WHERE cache_key = ?
+                  AND fetched_at >= datetime('now', ?)
+                """,
+                (cache_key, f"-{max_age_hours} hours"),
+            ).fetchone()
+        return json.loads(row["response"]) if row else None
+    finally:
+        conn.close()
+
+
+def tmdb_cache_put(cache_key: str, response: dict) -> None:
+    """Store (or refresh) a raw TMDB response under `cache_key`."""
+    conn = get_db()
+    try:
+        conn.execute(
+            """
+            INSERT INTO tmdb_cache (cache_key, response, fetched_at)
+            VALUES (?, ?, datetime('now'))
+            ON CONFLICT(cache_key) DO UPDATE SET
+                response = excluded.response,
+                fetched_at = excluded.fetched_at
+            """,
+            (cache_key, json.dumps(response, separators=(",", ":"))),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Enrichment reads/writes (used by backend.enrich).
+# ---------------------------------------------------------------------------
+
+
+def get_pending_movies(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """Movies that still need a TMDB match (match_status = 'pending')."""
+    return conn.execute(
+        "SELECT id, parsed_title, year FROM movies WHERE match_status = 'pending'"
+    ).fetchall()
+
+
+def get_pending_shows(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """Shows that still need a TMDB match."""
+    return conn.execute(
+        "SELECT id, parsed_title, year FROM shows WHERE match_status = 'pending'"
+    ).fetchall()
+
+
+def update_movie_metadata(conn: sqlite3.Connection, movie_id: int, meta: dict) -> None:
+    """Write TMDB-derived fields onto a movie and mark it matched."""
+    conn.execute(
+        """
+        UPDATE movies SET
+            tmdb_id = :tmdb_id, title = :title, year = :year, overview = :overview,
+            poster_path = :poster_path, backdrop_path = :backdrop_path,
+            rating = :rating, runtime = :runtime, genres = :genres,
+            cast = :cast, keywords = :keywords, match_status = 'matched'
+        WHERE id = :id
+        """,
+        {**meta, "id": movie_id},
+    )
+
+
+def update_show_metadata(conn: sqlite3.Connection, show_id: int, meta: dict) -> None:
+    """Write TMDB-derived fields onto a show and mark it matched."""
+    conn.execute(
+        """
+        UPDATE shows SET
+            tmdb_id = :tmdb_id, title = :title, year = :year, overview = :overview,
+            poster_path = :poster_path, backdrop_path = :backdrop_path,
+            rating = :rating, genres = :genres, keywords = :keywords,
+            match_status = 'matched'
+        WHERE id = :id
+        """,
+        {**meta, "id": show_id},
+    )
+
+
+def mark_movie_unmatched(conn: sqlite3.Connection, movie_id: int) -> None:
+    """Flag a movie as having no TMDB match (kept browsable, fixable later)."""
+    conn.execute(
+        "UPDATE movies SET match_status = 'unmatched' WHERE id = ?", (movie_id,)
+    )
+
+
+def mark_show_unmatched(conn: sqlite3.Connection, show_id: int) -> None:
+    """Flag a show as having no TMDB match (kept browsable, fixable later)."""
+    conn.execute("UPDATE shows SET match_status = 'unmatched' WHERE id = ?", (show_id,))
+
+
+def get_movie(conn: sqlite3.Connection, movie_id: int) -> sqlite3.Row | None:
+    """Fetch a single movie row by id (used by the manual fix-match path)."""
+    return conn.execute(
+        "SELECT id, parsed_title, year FROM movies WHERE id = ?", (movie_id,)
+    ).fetchone()
 
 
 if __name__ == "__main__":  # `python -m backend.db` initializes the database.
