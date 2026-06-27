@@ -1,0 +1,85 @@
+:root {
+  --bg: #141414;
+  --panel: #1f1f1f;
+  --text: #ffffff;
+  --muted: #b3b3b3;
+  --accent: #e50914;
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  padding: 18px 48px;
+  position: sticky;
+  top: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent);
+  z-index: 10;
+}
+
+.brand {
+  color: var(--accent);
+  font-weight: 800;
+  letter-spacing: 2px;
+  font-size: 1.5rem;
+}
+
+.hero {
+  max-width: 720px;
+  margin: 8vh auto 0;
+  padding: 0 24px;
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: 2.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.tagline {
+  color: var(--muted);
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+}
+
+.status-card {
+  background: var(--panel);
+  border-radius: 10px;
+  padding: 20px 24px;
+  text-align: left;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.status-row:last-child {
+  border-bottom: none;
+}
+
+.status-label {
+  color: var(--muted);
+}
+
+.status-value {
+  font-weight: 600;
+}
+
+.status.error {
+  color: #ff6b6b;
+}

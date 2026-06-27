@@ -1,0 +1,25 @@
+# Secrets & local config
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local data: database, cached images, trained models
+data/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
+
+# Claude local-only artifacts
+.claude/plans/
+.claude/settings.local.json
