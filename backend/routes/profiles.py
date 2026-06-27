@@ -42,7 +42,11 @@ async def create_profile(body: ProfileIn) -> dict:
             (body.name, body.avatar_color),
         )
         conn.commit()
-        return {"id": cur.lastrowid, "name": body.name, "avatar_color": body.avatar_color}
+        return {
+            "id": cur.lastrowid,
+            "name": body.name,
+            "avatar_color": body.avatar_color,
+        }
     finally:
         conn.close()
 
