@@ -35,6 +35,15 @@ class Settings:
         self.library_paths: list[Path] = _split_paths(os.getenv("LIBRARY_PATHS", ""))
         self.port: int = int(os.getenv("PORT", "8000"))
 
+        # Some ISPs DNS-poison TMDB; resolve its hostnames via Cloudflare DoH when set.
+        self.tmdb_use_doh: bool = os.getenv(
+            "TMDB_USE_DOH", "true"
+        ).strip().lower() not in (
+            "0",
+            "false",
+            "no",
+        )
+
         # Local data lives under data/ (gitignored): db, cached images, model.
         self.data_dir: Path = ROOT_DIR / "data"
         self.images_dir: Path = self.data_dir / "images"
