@@ -83,3 +83,430 @@ body {
 .status.error {
   color: #ff6b6b;
 }
+
+/* --------------------------------------------------------------------------
+   Streaming player feature: navbar, rows, detail, player, profile gate.
+   -------------------------------------------------------------------------- */
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 14px 48px;
+  position: sticky;
+  top: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.92), transparent);
+  z-index: 20;
+}
+
+.nav-links {
+  display: flex;
+  gap: 18px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.nav-links a:hover {
+  color: var(--text);
+}
+
+.nav-profile {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-avatar,
+.gate-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.nav-profile select {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 4px;
+}
+
+/* Hero banner */
+.hero-banner {
+  position: relative;
+  min-height: 60vh;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: flex-end;
+  margin-top: -64px; /* slide under the transparent navbar */
+}
+
+.hero-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(20, 20, 20, 0.9) 0%,
+    rgba(20, 20, 20, 0.5) 40%,
+    transparent 70%
+  );
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 620px;
+  padding: 48px;
+}
+
+.hero-title {
+  font-size: 3rem;
+  margin: 0 0 12px;
+}
+
+.hero-overview {
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.hero-actions,
+.detail-overlay .btn {
+  margin-top: 18px;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn {
+  border: none;
+  border-radius: 4px;
+  padding: 10px 22px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-play {
+  background: #fff;
+  color: #000;
+}
+
+.btn-secondary {
+  background: rgba(109, 109, 110, 0.7);
+  color: #fff;
+}
+
+.btn:hover {
+  opacity: 0.85;
+}
+
+/* Rows */
+.rows {
+  padding: 12px 48px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.row-title {
+  font-size: 1.25rem;
+  margin: 0 0 10px;
+}
+
+.row-scroller {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.poster-card {
+  flex: 0 0 auto;
+  width: 150px;
+}
+
+.poster-img {
+  width: 150px;
+  height: 225px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--panel);
+}
+
+.poster-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.poster-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 8px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.poster-progress {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+  margin-top: 4px;
+}
+
+.poster-progress-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.poster-title {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.poster-subtitle {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* Detail */
+.detail-backdrop {
+  min-height: 70vh;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: flex-end;
+}
+
+.detail-overlay {
+  width: 100%;
+  padding: 48px;
+  background: linear-gradient(0deg, rgba(20, 20, 20, 0.95), transparent);
+}
+
+.detail-overlay h1 {
+  font-size: 2.6rem;
+  margin: 0 0 10px;
+}
+
+.detail-meta {
+  display: flex;
+  gap: 16px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.detail-overview {
+  max-width: 640px;
+  line-height: 1.5;
+}
+
+.detail-episodes {
+  padding: 24px 48px 64px;
+}
+
+.episode-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  text-align: left;
+  background: var(--panel);
+  border: none;
+  color: var(--text);
+  padding: 14px 18px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.episode-row:hover {
+  background: #2a2a2a;
+}
+
+.episode-num {
+  color: var(--muted);
+  min-width: 56px;
+}
+
+.episode-title {
+  flex: 1;
+}
+
+.episode-play {
+  color: var(--accent);
+}
+
+/* Player */
+.player-page {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 30;
+}
+
+.player-back {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.player {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.player-video {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  min-height: 0;
+}
+
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  background: rgba(0, 0, 0, 0.85);
+}
+
+.player-btn {
+  background: transparent;
+  color: #fff;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.player-seek {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
+.player-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.player-subs select {
+  margin-left: 6px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.player-addsub {
+  cursor: pointer;
+}
+
+.player-mode-note {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.player-error,
+.player-loading {
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 8px;
+  text-align: center;
+  padding: 24px;
+}
+
+.player-error-detail {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* Profile gate */
+.gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 28px;
+}
+
+.gate-profiles {
+  display: flex;
+  gap: 24px;
+}
+
+.gate-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.gate-profile:hover {
+  color: var(--text);
+}
+
+.gate-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 8px;
+  font-size: 2.5rem;
+}
+
+.page-loading,
+.page-error {
+  padding: 80px 48px;
+  color: var(--muted);
+}

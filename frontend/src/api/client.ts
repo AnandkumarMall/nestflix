@@ -9,6 +9,20 @@ async function get<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+async function post<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`POST ${path} failed: ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
+// ---------------------------------------------------------------------------
+// Types (mirror the backend response shapes).
+// ---------------------------------------------------------------------------
+
 export interface Health {
   status: string;
   tmdb_configured: boolean;
@@ -22,7 +36,169 @@ export interface Profile {
   created_at?: string;
 }
 
+export interface Movie {
+  id: number;
+  tmdb_id: number | null;
+  parsed_title: string;
+  title: string | null;
+  year: number | null;
+  overview: string | null;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  rating: number | null;
+  runtime: number | null;
+  genres: string | null; // JSON array string
+  match_status: "pending" | "matched" | "unmatched";
+  path: string;
+  container: string;
+  // Joined in get_library via media_files; the media_file id used for playback:
+  media_file_id?: number;
+}
+
+export interface Episode {
+  id: number;
+  season: number;
+  episode: number;
+  title: string | null;
+  overview: string | null;
+  still_path: string | null;
+  path: string;
+  container: string;
+  media_file_id?: number;
+}
+
+export interface Show {
+  id: number;
+  tmdb_id: number | null;
+  parsed_title: string;
+  title: string | null;
+  year: number | null;
+  overview: string | null;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  rating: number | null;
+  genres: string | null;
+  match_status: "pending" | "matched" | "unmatched";
+  episodes: Episode[];
+}
+
+export interface Library {
+  movies: Movie[];
+  shows: Show[];
+}
+
+// Raw TMDB result (movies use `title`/`release_date`, TV uses `name`/`first_air_date`).
+export interface DiscoverItem {
+  id: number;
+  title?: string;
+  name?: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  overview: string | null;
+  vote_average?: number;
+  release_date?: string;
+  first_air_date?: string;
+}
+
+export type PlayMode = "direct" | "remux" | "transcode" | "unavailable";
+
+export interface SubtitleTrack {
+  track: string;
+  label: string;
+  language: string | null;
+  kind: "embedded" | "sidecar";
+}
+
+export interface PlaybackInfo {
+  media_file_id: number;
+  play_mode: PlayMode;
+  container: string;
+  video_codec: string | null;
+  audio_codec: string | null;
+  duration_seconds: number | null;
+  width: number | null;
+  height: number | null;
+  ffmpeg_available: boolean;
+  subtitles: SubtitleTrack[];
+  // Display metadata (movie or episode):
+  kind?: "movie" | "episode";
+  title?: string;
+  year?: number | null;
+  season?: number;
+  episode?: number;
+  episode_title?: string | null;
+  poster_path?: string | null;
+  backdrop_path?: string | null;
+  still_path?: string | null;
+}
+
+export interface WatchProgress {
+  position_seconds: number;
+  duration_seconds: number;
+  completed: boolean;
+}
+
+export interface ContinueItem {
+  media_file_id: number;
+  position_seconds: number;
+  duration_seconds: number;
+  kind: "movie" | "episode";
+  title: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  still_path?: string | null;
+  season?: number;
+  episode?: number;
+}
+
+// ---------------------------------------------------------------------------
+// URL helpers (kept here so components never build backend URLs themselves).
+// ---------------------------------------------------------------------------
+
+/** Cached TMDB image URL (poster/backdrop/still path), or null if no path. */
+export function imageUrl(path: string | null | undefined, size = "w342"): string | null {
+  if (!path) return null;
+  // Local library stores bare filenames; raw TMDB paths have a leading slash. The image
+  // route expects a bare "abc123.jpg", so strip any leading slashes.
+  return `${BASE}/images/${size}/${path.replace(/^\/+/, "")}`;
+}
+
+/** Video stream URL for a media file. `t` is the start offset (ffmpeg modes only). */
+export function streamUrl(mediaFileId: number, t = 0): string {
+  const q = t > 0 ? `?t=${encodeURIComponent(t.toFixed(3))}` : "";
+  return `${BASE}/playback/${mediaFileId}/stream${q}`;
+}
+
+/** WebVTT URL for one subtitle track of a media file. */
+export function subtitleUrl(mediaFileId: number, track: string): string {
+  return `${BASE}/playback/${mediaFileId}/subtitles/${track}.vtt`;
+}
+
 export const api = {
   health: () => get<Health>("/health"),
   profiles: () => get<{ profiles: Profile[] }>("/profiles"),
+  library: () => get<Library>("/library"),
+  trending: () => get<{ items: DiscoverItem[] }>("/discovery/trending"),
+  newReleases: () => get<{ items: DiscoverItem[] }>("/discovery/new-releases"),
+
+  playbackInfo: (mediaFileId: number) =>
+    get<PlaybackInfo>(`/playback/${mediaFileId}/info`),
+
+  readProgress: (profileId: number, mediaFileId: number) =>
+    get<WatchProgress>(
+      `/playback/progress?profile_id=${profileId}&media_file_id=${mediaFileId}`,
+    ),
+
+  saveProgress: (body: {
+    profile_id: number;
+    media_file_id: number;
+    position_seconds: number;
+    duration_seconds: number;
+    event?: string;
+  }) => post<{ ok: boolean; completed: boolean }>("/playback/progress", body),
+
+  continueWatching: (profileId: number) =>
+    get<{ profile_id: number; items: ContinueItem[] }>(
+      `/playback/continue?profile_id=${profileId}`,
+    ),
 };
