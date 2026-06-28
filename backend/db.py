@@ -676,6 +676,79 @@ def upsert_rating(
     )
 
 
+def get_profile_stats(
+    conn: sqlite3.Connection, profile_id: int, *, top_genres: int = 8, recent: int = 10
+) -> dict:
+    """Viewing summary for the Stats page: totals, thumbs, top genres, recent finishes.
+
+    All derived from existing tables (``watch_progress`` / ``ratings`` + title metadata) —
+    no new storage. A profile with no history returns zeroed totals and empty lists.
+    """
+    finished = conn.execute(
+        "SELECT COUNT(*) AS n FROM watch_progress WHERE profile_id = ? AND completed = 1",
+        (profile_id,),
+    ).fetchone()["n"]
+    seconds = conn.execute(
+        "SELECT COALESCE(SUM(position_seconds), 0) AS s "
+        "FROM watch_progress WHERE profile_id = ?",
+        (profile_id,),
+    ).fetchone()["s"]
+    rating_row = conn.execute(
+        """
+        SELECT COALESCE(SUM(value = 1), 0)  AS up,
+               COALESCE(SUM(value = -1), 0) AS down
+        FROM ratings WHERE profile_id = ?
+        """,
+        (profile_id,),
+    ).fetchone()
+
+    # Finished titles (movies + episodes→shows), newest first, with genres for tallying.
+    rows = conn.execute(
+        """
+        SELECT 'movie' AS kind, m.id AS id, m.title AS title, m.parsed_title AS parsed,
+               m.poster_path AS poster, m.genres AS genres, wp.updated_at AS updated_at
+        FROM watch_progress wp
+        JOIN movies m ON m.media_file_id = wp.media_file_id
+        WHERE wp.profile_id = ? AND wp.completed = 1
+        UNION ALL
+        SELECT 'show', s.id, s.title, s.parsed_title, s.poster_path, s.genres, wp.updated_at
+        FROM watch_progress wp
+        JOIN episodes e ON e.media_file_id = wp.media_file_id
+        JOIN shows s ON s.id = e.show_id
+        WHERE wp.profile_id = ? AND wp.completed = 1
+        ORDER BY updated_at DESC
+        """,
+        (profile_id, profile_id),
+    ).fetchall()
+
+    genre_counts: dict[str, int] = {}
+    recently_finished: list[dict] = []
+    seen: set[tuple[str, int]] = set()
+    for r in rows:
+        for g in _json_list(r["genres"]):
+            genre_counts[g] = genre_counts.get(g, 0) + 1
+        key = (r["kind"], r["id"])
+        if key not in seen and len(recently_finished) < recent:
+            seen.add(key)
+            recently_finished.append(
+                {
+                    "kind": r["kind"],
+                    "id": r["id"],
+                    "title": r["title"] or r["parsed"],
+                    "poster_path": r["poster"],
+                }
+            )
+
+    top = sorted(genre_counts.items(), key=lambda kv: (-kv[1], kv[0]))[:top_genres]
+    return {
+        "titles_finished": int(finished),
+        "seconds_watched": float(seconds),
+        "ratings": {"up": int(rating_row["up"]), "down": int(rating_row["down"])},
+        "top_genres": [{"name": name, "count": count} for name, count in top],
+        "recently_finished": recently_finished,
+    }
+
+
 if __name__ == "__main__":  # `python -m backend.db` initializes the database.
     init_db()
     print(f"Initialized database at {settings.db_path}")

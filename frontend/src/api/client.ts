@@ -171,6 +171,26 @@ export interface RecRow {
   items: RecItem[];
 }
 
+// A local-library search hit: a movie or show, tagged with its `type`.
+export type SearchResult =
+  | ({ type: "movie" } & Movie)
+  | ({ type: "show" } & Show);
+
+// Per-profile viewing summary for the Stats page.
+export interface Stats {
+  profile_id: number;
+  titles_finished: number;
+  seconds_watched: number;
+  ratings: { up: number; down: number };
+  top_genres: { name: string; count: number }[];
+  recently_finished: {
+    kind: "movie" | "show";
+    id: number;
+    title: string;
+    poster_path: string | null;
+  }[];
+}
+
 // ---------------------------------------------------------------------------
 // URL helpers (kept here so components never build backend URLs themselves).
 // ---------------------------------------------------------------------------
@@ -200,6 +220,13 @@ export const api = {
   library: () => get<Library>("/library"),
   trending: () => get<{ items: DiscoverItem[] }>("/discovery/trending"),
   newReleases: () => get<{ items: DiscoverItem[] }>("/discovery/new-releases"),
+
+  searchLibrary: (q: string) =>
+    get<{ query: string; results: SearchResult[] }>(
+      `/library/search?q=${encodeURIComponent(q)}`,
+    ),
+
+  stats: (profileId: number) => get<Stats>(`/stats?profile_id=${profileId}`),
 
   playbackInfo: (mediaFileId: number) =>
     get<PlaybackInfo>(`/playback/${mediaFileId}/info`),
