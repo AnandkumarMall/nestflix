@@ -106,7 +106,7 @@ export default function Detail() {
             {movie && movie.media_file_id != null && (
               <button
                 className="btn btn-play"
-                onClick={() => navigate(`/watch/${movie.media_file_id}`)}
+                onClick={() => navigate(`/watch/${movie.media_file_id}`, { state: { title } })}
               >
                 ► Play
               </button>
@@ -139,7 +139,12 @@ export default function Detail() {
               key={ep.id}
               className="episode-row"
               onClick={() =>
-                ep.media_file_id != null && navigate(`/watch/${ep.media_file_id}`)
+                ep.media_file_id != null && navigate(`/watch/${ep.media_file_id}`, {
+                  state: {
+                    title,
+                    subtitle: `S${ep.season}E${ep.episode} · ${ep.title || `Episode ${ep.episode}`}`,
+                  },
+                })
               }
             >
               <span className="episode-num">
