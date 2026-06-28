@@ -14,6 +14,11 @@ import Hero from "../components/Hero";
 import PosterRow from "../components/PosterRow";
 import PosterCard from "../components/PosterCard";
 
+// A cosmetic TMDB-style "match" score derived from the rating (mirrors Hero).
+function matchScore(rating: number | null): number | null {
+  return rating != null ? Math.min(99, Math.round(rating * 9.5)) : null;
+}
+
 export default function Home() {
   const { activeProfile } = useProfile();
   const [library, setLibrary] = useState<Library | null>(null);
@@ -99,7 +104,15 @@ export default function Home() {
                 title={m.title || m.parsed_title}
                 posterPath={m.poster_path}
                 to={`/title/movie/${m.id}`}
+                playTo={
+                  m.media_file_id != null
+                    ? `/watch/${m.media_file_id}`
+                    : undefined
+                }
                 subtitle={m.year ? String(m.year) : undefined}
+                match={matchScore(m.rating)}
+                runtime={m.runtime}
+                genres={m.genres}
               />
             ))}
           </PosterRow>
@@ -114,6 +127,8 @@ export default function Home() {
                 posterPath={s.poster_path}
                 to={`/title/show/${s.id}`}
                 subtitle={`${s.episodes.length} episodes`}
+                match={matchScore(s.rating)}
+                genres={s.genres}
               />
             ))}
           </PosterRow>
