@@ -25,10 +25,6 @@ export default function NavBar() {
       </Link>
       <nav className="nav-links">
         <Link to="/">Home</Link>
-        <Link to="/">TV Shows</Link>
-        <Link to="/">Movies</Link>
-        <Link to="/">New &amp; Popular</Link>
-        <Link to="/">My List</Link>
       </nav>
 
       <div className="nav-right">

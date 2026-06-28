@@ -4,25 +4,7 @@
 
 import { useNavigate } from "react-router-dom";
 import { imageUrl, type Movie } from "../api/client";
-
-function parseGenres(raw: string | null): string[] {
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function formatRuntime(minutes: number | null): string | null {
-  if (!minutes || minutes <= 0) return null;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h === 0) return `${m}m`;
-  if (m === 0) return `${h}h`;
-  return `${h}h ${m}m`;
-}
+import { formatRuntime, parseGenres } from "../utils";
 
 export default function Hero({ movie }: { movie: Movie }) {
   const navigate = useNavigate();

@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 
 from .. import db, media_probe, streaming
+from ..config import settings
 
 router = APIRouter(prefix="/api/playback", tags=["playback"])
 
@@ -140,7 +141,7 @@ async def playback_info(media_file_id: int) -> dict:
         "duration_seconds": info.duration_seconds if info else None,
         "width": info.width if info else None,
         "height": info.height if info else None,
-        "ffmpeg_available": media_probe.ffmpeg_available(),
+        "ffmpeg_available": settings.ffmpeg_available,
         "subtitles": streaming.subtitle_tracks(path, info),
         **display,
     }

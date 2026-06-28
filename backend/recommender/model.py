@@ -45,34 +45,22 @@ def _model_path(profile_id: int) -> Path:
     return settings.models_dir / f"profile_{profile_id}.pkl"
 
 
-def training_data(
-    entries: list[dict], vocab: Vocabulary
-) -> tuple[np.ndarray, np.ndarray]:
-    """Build (X, y) from watch history: y = 1 if the title was finished, else 0.
-
-    ``entries`` are ``{"title": <title dict>, "completed": bool, "finishes": int, ...}``.
-    """
-    if not entries:
-        return np.zeros((0, vocab.dim)), np.zeros(0)
-    X = feature_matrix([e["title"] for e in entries], vocab)
-    y = np.array(
-        [1 if (e.get("completed") or e.get("finishes", 0) > 0) else 0 for e in entries],
-        dtype=np.int64,
-    )
-    return X, y
-
-
 def train(
     profile_id: int, entries: list[dict], vocab: Vocabulary, *, completed_count: int
 ) -> TasteModel | None:
     """Fit and persist a model for the profile, or return ``None`` if not yet trainable.
 
-    Returns ``None`` (and writes nothing) when there are too few samples or only one
-    class — both of which make a classifier meaningless on this much data.
+    Builds (X, y) from watch history (y = 1 if the title was finished, else 0). Returns
+    ``None`` (and writes nothing) when there are too few samples or only one class — both
+    of which make a classifier meaningless on this much data.
     """
     if len(entries) < settings.model_min_samples:
         return None
-    X, y = training_data(entries, vocab)
+    X = feature_matrix([e["title"] for e in entries], vocab)
+    y = np.array(
+        [1 if (e.get("completed") or e.get("finishes", 0) > 0) else 0 for e in entries],
+        dtype=np.int64,
+    )
     if len(np.unique(y)) < 2:
         return None
 
@@ -125,14 +113,6 @@ def predict(model: TasteModel, titles: list[dict]) -> np.ndarray:
     if 1 not in classes:
         return np.zeros(len(titles), dtype=np.float64)
     return proba[:, classes.index(1)]
-
-
-def top_features(model: TasteModel, *, top_k: int = 5) -> list[str]:
-    """Feature labels with the largest positive coefficients (global explanation)."""
-    coef = model.estimator.coef_[0]
-    names = model.vocab.feature_names
-    order = np.argsort(coef)[::-1]
-    return [names[i] for i in order if coef[i] > 0][:top_k]
 
 
 def should_retrain(profile_id: int, completed_count: int) -> bool:

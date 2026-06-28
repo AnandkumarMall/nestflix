@@ -15,6 +15,7 @@ import {
 import { useProfile } from "../profile";
 import PosterRow from "../components/PosterRow";
 import PosterCard from "../components/PosterCard";
+import { parseGenres } from "../utils";
 
 export default function Detail() {
   const { kind, id } = useParams<{ kind: string; id: string }>();
@@ -71,7 +72,7 @@ export default function Detail() {
   const item = (movie ?? show) as Movie | Show;
   const backdrop = imageUrl(item.backdrop_path, "w780");
   const title = item.title || item.parsed_title;
-  const genres = item.genres ? safeGenres(item.genres) : [];
+  const genres = parseGenres(item.genres);
 
   function sendRating(value: 1 | -1) {
     if (!activeProfile) return;
@@ -176,13 +177,4 @@ export default function Detail() {
       )}
     </div>
   );
-}
-
-function safeGenres(raw: string): string[] {
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
 }

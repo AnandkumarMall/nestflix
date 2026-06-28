@@ -51,11 +51,6 @@ class MediaInfo:
     subtitles: list[SubtitleStream] = field(default_factory=list)
 
 
-def ffmpeg_available() -> bool:
-    """True when ffmpeg + ffprobe are usable (remux/transcode/subtitle extraction)."""
-    return settings.ffmpeg_available
-
-
 # Probe results are cached in-process, keyed by (path, mtime) so an edited/replaced file
 # is re-probed but repeat requests for the same file are free.
 _probe_cache: dict[tuple[str, float], MediaInfo | None] = {}

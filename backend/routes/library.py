@@ -6,6 +6,8 @@ return the result. No SQL lives here.
 
 from __future__ import annotations
 
+from dataclasses import asdict
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -32,7 +34,7 @@ async def list_library() -> dict:
 async def scan() -> dict:
     """(Re)scan the configured library folders and return what changed."""
     result = scan_library()
-    return result.as_dict()
+    return asdict(result)
 
 
 @router.post("/enrich")

@@ -9,7 +9,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from ..db import get_db
+from .. import db
 
 router = APIRouter(prefix="/api/profiles", tags=["profiles"])
 
@@ -22,44 +22,18 @@ class ProfileIn(BaseModel):
 @router.get("")
 async def list_profiles() -> dict:
     """Return all profiles."""
-    conn = get_db()
-    try:
-        rows = conn.execute(
-            "SELECT id, name, avatar_color, created_at FROM profiles ORDER BY id"
-        ).fetchall()
-        return {"profiles": [dict(r) for r in rows]}
-    finally:
-        conn.close()
+    return {"profiles": db.list_profiles()}
 
 
 @router.post("", status_code=201)
 async def create_profile(body: ProfileIn) -> dict:
     """Create a new profile."""
-    conn = get_db()
-    try:
-        cur = conn.execute(
-            "INSERT INTO profiles (name, avatar_color) VALUES (?, ?)",
-            (body.name, body.avatar_color),
-        )
-        conn.commit()
-        return {
-            "id": cur.lastrowid,
-            "name": body.name,
-            "avatar_color": body.avatar_color,
-        }
-    finally:
-        conn.close()
+    return db.create_profile(body.name, body.avatar_color)
 
 
 @router.delete("/{profile_id}")
 async def delete_profile(profile_id: int) -> dict:
     """Delete a profile and its history (cascades)."""
-    conn = get_db()
-    try:
-        cur = conn.execute("DELETE FROM profiles WHERE id = ?", (profile_id,))
-        conn.commit()
-        if cur.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Profile not found")
-        return {"ok": True}
-    finally:
-        conn.close()
+    if not db.delete_profile(profile_id):
+        raise HTTPException(status_code=404, detail="Profile not found")
+    return {"ok": True}
