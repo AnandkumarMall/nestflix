@@ -18,13 +18,20 @@ import asyncio
 import logging
 import re
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, TypedDict
 
 from fastapi import HTTPException
 from fastapi.responses import Response, StreamingResponse
 
 from .config import settings
 from .media_probe import MediaInfo
+
+
+class SubtitleTrackDict(TypedDict):
+    track: str
+    label: str
+    language: str | None
+    kind: str
 
 logger = logging.getLogger(__name__)
 
@@ -210,9 +217,9 @@ def _sidecar_language(path: Path, sidecar: Path) -> str | None:
     return extra or None
 
 
-def subtitle_tracks(path: Path, info: MediaInfo | None) -> list[dict]:
+def subtitle_tracks(path: Path, info: MediaInfo | None) -> list[SubtitleTrackDict]:
     """List selectable subtitle tracks: text-based embedded streams + sidecar files."""
-    tracks: list[dict] = []
+    tracks: list[SubtitleTrackDict] = []
     if info:
         for s in info.subtitles:
             if not s.text_based:

@@ -1,10 +1,13 @@
 :root {
-  --bg: #141414;
-  --panel: #1f1f1f;
+  --bg: #000000;
+  --panel: #141414;
   --text: #ffffff;
-  --muted: #b3b3b3;
-  --accent: #e50914;
-  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --text-secondary: #b3b3b3;
+  --text-muted: #808080;
+  --accent: #E50914;
+  --accent-hover: #C11119;
+  --accent-active: #B00710;
+  font-family: "Netflix Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 * {
@@ -23,7 +26,7 @@ body {
   padding: 18px 48px;
   position: sticky;
   top: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7) 10%, rgba(0, 0, 0, 0));
   z-index: 10;
 }
 
@@ -47,7 +50,7 @@ body {
 }
 
 .tagline {
-  color: var(--muted);
+  color: var(--text-secondary);
   font-size: 1.1rem;
   margin-bottom: 2rem;
 }
@@ -73,7 +76,7 @@ body {
 }
 
 .status-label {
-  color: var(--muted);
+  color: var(--text-secondary);
 }
 
 .status-value {
@@ -100,15 +103,19 @@ a {
   padding: 14px 48px;
   position: sticky;
   top: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.92), transparent);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7) 10%, rgba(0, 0, 0, 0));
   z-index: 20;
 }
 
 .nav-links {
   display: flex;
   gap: 18px;
-  color: var(--muted);
+  color: var(--text-secondary);
   font-size: 0.95rem;
+}
+
+.nav-links a {
+  transition: color 250ms ease-in-out;
 }
 
 .nav-links a:hover {
@@ -178,7 +185,7 @@ a {
 }
 
 .hero-overview {
-  color: var(--muted);
+  color: var(--text-secondary);
   font-size: 1.05rem;
   line-height: 1.5;
   display: -webkit-box;
@@ -204,20 +211,58 @@ a {
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
+  transition: opacity 250ms ease-in-out, background-color 250ms ease-in-out;
 }
 
 .btn-play {
-  background: #fff;
-  color: #000;
+  background: #ffffff;
+  color: #000000;
+}
+
+.btn-play:hover {
+  background: rgba(255, 255, 255, 0.75);
 }
 
 .btn-secondary {
   background: rgba(109, 109, 110, 0.7);
-  color: #fff;
+  color: #ffffff;
 }
 
-.btn:hover {
-  opacity: 0.85;
+.btn-secondary:hover {
+  background: rgba(109, 109, 110, 0.9);
+}
+
+/* Detail actions: play + thumbs ratings on one row. */
+.detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.btn-thumb {
+  background: rgba(42, 42, 42, 0.7);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 1.1rem;
+}
+
+.btn-thumb:hover {
+  border-color: #ffffff;
+  background: rgba(80, 80, 80, 0.9);
+}
+
+.btn-thumb.active {
+  background: #e50914;
+  border-color: #e50914;
+}
+
+.detail-similar {
+  padding: 24px 48px 64px;
 }
 
 /* Rows */
@@ -225,17 +270,18 @@ a {
   padding: 12px 48px 64px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 48px;
 }
 
 .row-title {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
+  font-weight: bold;
   margin: 0 0 10px;
 }
 
 .row-scroller {
   display: flex;
-  gap: 10px;
+  gap: 6px;
   overflow-x: auto;
   padding-bottom: 8px;
 }
@@ -243,6 +289,14 @@ a {
 .poster-card {
   flex: 0 0 auto;
   width: 150px;
+  transition: transform 250ms ease-in-out, box-shadow 250ms ease-in-out;
+  cursor: pointer;
+}
+
+.poster-card:hover {
+  transform: scale(1.25);
+  z-index: 5;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.75);
 }
 
 .poster-img {
@@ -266,7 +320,7 @@ a {
   height: 100%;
   padding: 8px;
   text-align: center;
-  color: var(--muted);
+  color: var(--text-secondary);
   font-size: 0.8rem;
 }
 
@@ -292,7 +346,7 @@ a {
 }
 
 .poster-subtitle {
-  color: var(--muted);
+  color: var(--text-secondary);
   font-size: 0.75rem;
 }
 
@@ -319,7 +373,7 @@ a {
 .detail-meta {
   display: flex;
   gap: 16px;
-  color: var(--muted);
+  color: var(--text-secondary);
   margin-bottom: 12px;
 }
 
@@ -345,6 +399,7 @@ a {
   border-radius: 6px;
   margin-bottom: 8px;
   cursor: pointer;
+  transition: background-color 250ms ease-in-out;
 }
 
 .episode-row:hover {
@@ -352,7 +407,7 @@ a {
 }
 
 .episode-num {
-  color: var(--muted);
+  color: var(--text-secondary);
   min-width: 56px;
 }
 
@@ -414,6 +469,11 @@ a {
   border: none;
   font-size: 1.1rem;
   cursor: pointer;
+  transition: opacity 250ms ease-in-out;
+}
+
+.player-btn:hover {
+  opacity: 0.8;
 }
 
 .player-seek {
@@ -423,7 +483,7 @@ a {
 
 .player-time {
   font-variant-numeric: tabular-nums;
-  color: var(--muted);
+  color: var(--text-secondary);
   font-size: 0.85rem;
 }
 
@@ -443,7 +503,7 @@ a {
   position: absolute;
   top: 18px;
   right: 18px;
-  color: var(--muted);
+  color: var(--text-secondary);
   font-size: 0.8rem;
   background: rgba(0, 0, 0, 0.5);
   padding: 4px 8px;
@@ -464,7 +524,7 @@ a {
 }
 
 .player-error-detail {
-  color: var(--muted);
+  color: var(--text-secondary);
   font-size: 0.85rem;
 }
 
@@ -490,8 +550,9 @@ a {
   gap: 10px;
   background: transparent;
   border: none;
-  color: var(--muted);
+  color: var(--text-secondary);
   cursor: pointer;
+  transition: color 250ms ease-in-out;
 }
 
 .gate-profile:hover {
@@ -508,5 +569,5 @@ a {
 .page-loading,
 .page-error {
   padding: 80px 48px;
-  color: var(--muted);
+  color: var(--text-secondary);
 }

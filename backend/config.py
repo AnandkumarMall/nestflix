@@ -63,11 +63,19 @@ class Settings:
             "no",
         )
 
-        # Local data lives under data/ (gitignored): db, cached images, model.
+        # Local data lives under data/ (gitignored): db, cached images, models.
         self.data_dir: Path = ROOT_DIR / "data"
         self.images_dir: Path = self.data_dir / "images"
         self.db_path: Path = self.data_dir / "nestflix.db"
-        self.model_path: Path = self.data_dir / "taste_model.pkl"
+        # One persisted "will I finish this?" model per profile.
+        self.models_dir: Path = self.data_dir / "models"
+
+        # Recommendation engine knobs. The content-based path always runs; the learned
+        # re-ranker only activates past MODEL_MIN_SAMPLES completed watches and retrains
+        # every RETRAIN_EVERY completed watches (keeps the tiny single-user model fresh
+        # without overfitting).
+        self.model_min_samples: int = int(os.getenv("MODEL_MIN_SAMPLES", "12"))
+        self.retrain_every: int = int(os.getenv("RETRAIN_EVERY", "5"))
 
         # Where the built frontend ends up (served by FastAPI in production).
         self.frontend_dist: Path = ROOT_DIR / "frontend" / "dist"
@@ -77,11 +85,11 @@ class Settings:
         # extract embedded subtitles. Absent → the app still streams natively-playable
         # files and surfaces a clear "needs ffmpeg" state for the rest. Paths may be
         # overridden via .env; otherwise we look them up on PATH.
-        self.ffmpeg_path: str = (
-            os.getenv("FFMPEG_PATH", "").strip() or _find_binary("ffmpeg")
+        self.ffmpeg_path: str = os.getenv("FFMPEG_PATH", "").strip() or _find_binary(
+            "ffmpeg"
         )
-        self.ffprobe_path: str = (
-            os.getenv("FFPROBE_PATH", "").strip() or _find_binary("ffprobe")
+        self.ffprobe_path: str = os.getenv("FFPROBE_PATH", "").strip() or _find_binary(
+            "ffprobe"
         )
         # x264 transcode quality/speed knobs (sane defaults; rarely changed).
         self.transcode_preset: str = os.getenv("TRANSCODE_PRESET", "veryfast").strip()
@@ -100,6 +108,7 @@ class Settings:
         """Create local data directories if they don't exist yet."""
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.images_dir.mkdir(parents=True, exist_ok=True)
+        self.models_dir.mkdir(parents=True, exist_ok=True)
 
 
 settings = Settings()

@@ -111,11 +111,8 @@ export default function VideoPlayer({ mediaFileId, profileId }: Props) {
         duration_seconds: duration || info.duration_seconds || 0,
         ...(event ? { event } : {}),
       };
-      if (beacon && navigator.sendBeacon) {
-        navigator.sendBeacon(
-          "/api/playback/progress",
-          new Blob([JSON.stringify(body)], { type: "application/json" }),
-        );
+      if (beacon && typeof navigator.sendBeacon === "function") {
+        api.saveProgressBeacon(body);
       } else {
         api.saveProgress(body).catch(() => undefined);
       }
@@ -126,11 +123,14 @@ export default function VideoPlayer({ mediaFileId, profileId }: Props) {
   // Save on tab hide / unload so we don't lose the position.
   useEffect(() => {
     const onHide = () => saveProgress(undefined, true);
-    document.addEventListener("visibilitychange", () => {
+    const onVisibilityChange = () => {
       if (document.visibilityState === "hidden") onHide();
-    });
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
     window.addEventListener("pagehide", onHide);
     return () => {
+      // Safe: saveProgress is stable via useCallback; listeners must be removed to prevent memory leaks on unmount or navigation.
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("pagehide", onHide);
       saveProgress(); // save when navigating away from the player
     };

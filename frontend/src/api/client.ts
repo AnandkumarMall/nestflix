@@ -151,6 +151,26 @@ export interface ContinueItem {
   episode?: number;
 }
 
+// One recommended title (a card). `reason` is the human-readable explanation.
+export interface RecItem {
+  kind: "movie" | "show";
+  id: number;
+  title: string;
+  year: number | null;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  media_file_id: number | null;
+  reason: string;
+  score: number;
+}
+
+// A titled, ordered row of recommendations (Top Picks, Because You Watched …, genres).
+export interface RecRow {
+  key: string;
+  title: string;
+  items: RecItem[];
+}
+
 // ---------------------------------------------------------------------------
 // URL helpers (kept here so components never build backend URLs themselves).
 // ---------------------------------------------------------------------------
@@ -201,4 +221,35 @@ export const api = {
     get<{ profile_id: number; items: ContinueItem[] }>(
       `/playback/continue?profile_id=${profileId}`,
     ),
+
+  recommendationRows: (profileId: number) =>
+    get<{ profile_id: number; rows: RecRow[] }>(
+      `/recommendations/rows?profile_id=${profileId}`,
+    ),
+
+  similar: (kind: "movie" | "show", id: number) =>
+    get<{ kind: string; id: number; items: RecItem[] }>(
+      `/recommendations/similar?kind=${kind}&id=${id}`,
+    ),
+
+  ratings: (profileId: number) =>
+    get<{ ratings: { kind: "movie" | "show"; id: number; value: 1 | -1 }[] }>(
+      `/recommendations/ratings?profile_id=${profileId}`,
+    ),
+
+  rate: (body: {
+    profile_id: number;
+    movie_id?: number;
+    show_id?: number;
+    value: 1 | -1;
+  }) => post<{ ok: boolean }>("/recommendations/rate", body),
+
+  saveProgressBeacon: (body: {
+    profile_id: number;
+    media_file_id: number;
+    position_seconds: number;
+    duration_seconds: number;
+  }) => {
+    navigator.sendBeacon(`${BASE}/playback/progress`, JSON.stringify(body));
+  },
 };
