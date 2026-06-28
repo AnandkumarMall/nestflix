@@ -177,6 +177,50 @@ def get_library() -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Profiles (used by the profiles route).
+# ---------------------------------------------------------------------------
+
+
+def list_profiles() -> list[dict]:
+    """Return all profiles, oldest first."""
+    conn = get_db()
+    try:
+        return [
+            dict(r)
+            for r in conn.execute(
+                "SELECT id, name, avatar_color, created_at FROM profiles ORDER BY id"
+            ).fetchall()
+        ]
+    finally:
+        conn.close()
+
+
+def create_profile(name: str, avatar_color: str) -> dict:
+    """Insert a profile and return it."""
+    conn = get_db()
+    try:
+        cur = conn.execute(
+            "INSERT INTO profiles (name, avatar_color) VALUES (?, ?)",
+            (name, avatar_color),
+        )
+        conn.commit()
+        return {"id": cur.lastrowid, "name": name, "avatar_color": avatar_color}
+    finally:
+        conn.close()
+
+
+def delete_profile(profile_id: int) -> bool:
+    """Delete a profile (history cascades). Returns False if it didn't exist."""
+    conn = get_db()
+    try:
+        cur = conn.execute("DELETE FROM profiles WHERE id = ?", (profile_id,))
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
 # TMDB response cache (used only by backend.tmdb).
 # ---------------------------------------------------------------------------
 

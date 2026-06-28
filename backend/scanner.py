@@ -29,15 +29,6 @@ class ScanResult:
     skipped: int = 0
     errors: list[str] = field(default_factory=list)
 
-    def as_dict(self) -> dict:
-        return {
-            "files_seen": self.files_seen,
-            "movies_added": self.movies_added,
-            "episodes_added": self.episodes_added,
-            "skipped": self.skipped,
-            "errors": self.errors,
-        }
-
 
 def iter_video_files(roots: Iterable[Path]) -> Iterator[Path]:
     """Yield video files under the given roots, skipping hidden and sample directories."""

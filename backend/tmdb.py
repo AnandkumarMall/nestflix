@@ -279,12 +279,6 @@ async def tv_details(tmdb_id: int) -> dict[str, Any]:
     return await _get(f"tv/{tmdb_id}", {"append_to_response": "credits,keywords"})
 
 
-async def movie_recommendations(tmdb_id: int) -> list[dict[str, Any]]:
-    """TMDB 'recommendations' for a movie (used by 'Because you watched X')."""
-    data = await _get(f"movie/{tmdb_id}/recommendations")
-    return data.get("results", [])
-
-
 async def trending(
     media_type: str = "all", window: str = "week"
 ) -> list[dict[str, Any]]:
