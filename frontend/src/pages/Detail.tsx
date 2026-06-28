@@ -1,22 +1,58 @@
-// Title detail: backdrop, metadata, a Play/Resume button, and (for shows) the episode
-// list. Data comes from the library endpoint and is matched by kind + id from the route.
+// Title detail: backdrop, metadata, a Play/Resume button, thumbs rating, the episode
+// list (for shows), and a content-based "More Like This" row. Data comes from the
+// library endpoint plus the recommender's similar endpoint, matched by kind + id.
 
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { api, imageUrl, type Library, type Movie, type Show } from "../api/client";
+import {
+  api,
+  imageUrl,
+  type Library,
+  type Movie,
+  type RecItem,
+  type Show,
+} from "../api/client";
+import { useProfile } from "../profile";
+import PosterRow from "../components/PosterRow";
+import PosterCard from "../components/PosterCard";
 
 export default function Detail() {
   const { kind, id } = useParams<{ kind: string; id: string }>();
   const navigate = useNavigate();
+  const { activeProfile } = useProfile();
   const [library, setLibrary] = useState<Library | null>(null);
+  const [similar, setSimilar] = useState<RecItem[]>([]);
+  const [rating, setRating] = useState<1 | -1 | 0>(0);
+
+  const numericId = Number(id);
 
   useEffect(() => {
     api.library().then(setLibrary).catch(() => setLibrary({ movies: [], shows: [] }));
   }, []);
 
+  useEffect(() => {
+    setRating(0);
+    if (kind !== "movie" && kind !== "show") return;
+    api
+      .similar(kind, numericId)
+      .then((r) => setSimilar(r.items))
+      .catch(() => setSimilar([]));
+  }, [kind, numericId]);
+
+  useEffect(() => {
+    setRating(0);
+    if (!activeProfile || (kind !== "movie" && kind !== "show")) return;
+    api
+      .ratings(activeProfile.id)
+      .then((r) => {
+        const saved = r.ratings.find((x) => x.kind === kind && x.id === numericId);
+        setRating(saved ? saved.value : 0);
+      })
+      .catch(() => undefined);
+  }, [activeProfile, kind, numericId]);
+
   if (!library) return <div className="page-loading">Loading…</div>;
 
-  const numericId = Number(id);
   const movie =
     kind === "movie"
       ? library.movies.find((m) => m.id === numericId)
@@ -37,6 +73,19 @@ export default function Detail() {
   const title = item.title || item.parsed_title;
   const genres = item.genres ? safeGenres(item.genres) : [];
 
+  function sendRating(value: 1 | -1) {
+    if (!activeProfile) return;
+    setRating(value);
+    api
+      .rate({
+        profile_id: activeProfile.id,
+        movie_id: movie?.id,
+        show_id: show?.id,
+        value,
+      })
+      .catch(() => undefined);
+  }
+
   return (
     <div className="detail">
       <div
@@ -53,14 +102,32 @@ export default function Detail() {
           </div>
           {item.overview && <p className="detail-overview">{item.overview}</p>}
 
-          {movie && movie.media_file_id != null && (
+          <div className="detail-actions">
+            {movie && movie.media_file_id != null && (
+              <button
+                className="btn btn-play"
+                onClick={() => navigate(`/watch/${movie.media_file_id}`)}
+              >
+                ► Play
+              </button>
+            )}
             <button
-              className="btn btn-play"
-              onClick={() => navigate(`/watch/${movie.media_file_id}`)}
+              className={`btn btn-thumb ${rating === 1 ? "active" : ""}`}
+              title="I like this"
+              aria-pressed={rating === 1}
+              onClick={() => sendRating(1)}
             >
-              ► Play
+              👍
             </button>
-          )}
+            <button
+              className={`btn btn-thumb ${rating === -1 ? "active" : ""}`}
+              title="Not for me"
+              aria-pressed={rating === -1}
+              onClick={() => sendRating(-1)}
+            >
+              👎
+            </button>
+          </div>
         </div>
       </div>
 
@@ -84,6 +151,22 @@ export default function Detail() {
               <span className="episode-play">►</span>
             </button>
           ))}
+        </div>
+      )}
+
+      {similar.length > 0 && (
+        <div className="detail-similar">
+          <PosterRow title="More Like This">
+            {similar.map((it) => (
+              <PosterCard
+                key={`${it.kind}-${it.id}`}
+                title={it.title}
+                posterPath={it.poster_path}
+                to={`/title/${it.kind}/${it.id}`}
+                subtitle={it.year ? String(it.year) : undefined}
+              />
+            ))}
+          </PosterRow>
         </div>
       )}
     </div>

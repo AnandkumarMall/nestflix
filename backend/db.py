@@ -438,6 +438,200 @@ def get_continue_watching(conn: sqlite3.Connection, profile_id: int) -> list[dic
     return items
 
 
+# ---------------------------------------------------------------------------
+# Recommender reads (used by backend.recommender). All SQL stays here; the
+# recommender package consumes plain dicts and does the math.
+# ---------------------------------------------------------------------------
+
+
+def _json_list(raw: str | None) -> list[str]:
+    """Parse a JSON-array column (genres/keywords/cast) into a list of strings.
+
+    Tolerates NULL and malformed JSON (returns []) so a bad row can't break ranking.
+    """
+    if not raw:
+        return []
+    try:
+        value = json.loads(raw)
+    except (ValueError, TypeError):
+        return []
+    return [str(v) for v in value] if isinstance(value, list) else []
+
+
+def get_titles_for_features(conn: sqlite3.Connection) -> list[dict]:
+    """Every movie + show with the metadata the recommender turns into feature vectors.
+
+    A "title" is the unit we recommend: a movie (one media file) or a show (its episode
+    media files grouped). Shows have no cast/runtime in TMDB show details, so those
+    default to empty/None. ``media_file_ids`` lets the caller map watch events back to a
+    title; ``primary_media_file_id`` is what a "Play" link should target.
+    """
+    titles: list[dict] = []
+
+    for r in conn.execute("""
+        SELECT m.id, m.title, m.parsed_title, m.year, m.rating, m.runtime,
+               m.genres, m.keywords, m.cast, m.poster_path, m.backdrop_path,
+               m.media_file_id
+        FROM movies m
+        WHERE m.match_status != 'unmatched' OR m.poster_path IS NOT NULL
+        """).fetchall():
+        titles.append(
+            {
+                "kind": "movie",
+                "id": r["id"],
+                "title": r["title"] or r["parsed_title"],
+                "year": r["year"],
+                "rating": r["rating"],
+                "runtime": r["runtime"],
+                "genres": _json_list(r["genres"]),
+                "keywords": _json_list(r["keywords"]),
+                "cast": _json_list(r["cast"]),
+                "poster_path": r["poster_path"],
+                "backdrop_path": r["backdrop_path"],
+                "media_file_ids": [r["media_file_id"]],
+                "primary_media_file_id": r["media_file_id"],
+            }
+        )
+
+    for s in conn.execute("""
+        SELECT id, title, parsed_title, year, rating, genres, keywords,
+               poster_path, backdrop_path
+        FROM shows
+        WHERE match_status != 'unmatched' OR poster_path IS NOT NULL
+        """).fetchall():
+        episodes = conn.execute(
+            "SELECT media_file_id FROM episodes WHERE show_id = ? ORDER BY season, episode",
+            (s["id"],),
+        ).fetchall()
+        media_ids = [e["media_file_id"] for e in episodes]
+        titles.append(
+            {
+                "kind": "show",
+                "id": s["id"],
+                "title": s["title"] or s["parsed_title"],
+                "year": s["year"],
+                "rating": s["rating"],
+                "runtime": None,
+                "genres": _json_list(s["genres"]),
+                "keywords": _json_list(s["keywords"]),
+                "cast": [],
+                "poster_path": s["poster_path"],
+                "backdrop_path": s["backdrop_path"],
+                "media_file_ids": media_ids,
+                "primary_media_file_id": media_ids[0] if media_ids else None,
+            }
+        )
+
+    return titles
+
+
+def get_watch_history(conn: sqlite3.Connection, profile_id: int) -> list[dict]:
+    """Per watched media file: completion + behavioral signals, newest first.
+
+    Combines ``watch_progress`` (resume position / completed flag) with ``watch_events``
+    (finish / abandon counts). Returns one row per media file; mapping those to titles and
+    deriving recency/taste weights is done in the recommender (``rows.home_rows``), not
+    here.
+    """
+    rows = conn.execute(
+        """
+        SELECT
+            wp.media_file_id,
+            wp.completed,
+            CASE WHEN wp.duration_seconds > 0
+                 THEN wp.position_seconds / wp.duration_seconds ELSE 0 END AS pct,
+            wp.updated_at,
+            COALESCE(SUM(CASE WHEN we.event = 'finish'  THEN 1 ELSE 0 END), 0) AS finishes,
+            COALESCE(SUM(CASE WHEN we.event = 'abandon' THEN 1 ELSE 0 END), 0) AS abandons
+        FROM watch_progress wp
+        LEFT JOIN watch_events we
+               ON we.media_file_id = wp.media_file_id
+              AND we.profile_id = wp.profile_id
+        WHERE wp.profile_id = ?
+        GROUP BY wp.media_file_id
+        ORDER BY wp.updated_at DESC
+        """,
+        (profile_id,),
+    ).fetchall()
+    return [
+        {
+            "media_file_id": r["media_file_id"],
+            "completed": bool(r["completed"]),
+            "pct": float(r["pct"] or 0.0),
+            "updated_at": r["updated_at"],
+            "finishes": r["finishes"],
+            "abandons": r["abandons"],
+        }
+        for r in rows
+    ]
+
+
+def get_completed_count(conn: sqlite3.Connection, profile_id: int) -> int:
+    """How many titles this profile has finished — drives the model-activation threshold."""
+    row = conn.execute(
+        "SELECT COUNT(*) AS n FROM watch_progress WHERE profile_id = ? AND completed = 1",
+        (profile_id,),
+    ).fetchone()
+    return int(row["n"])
+
+
+def get_finished_media_ids(conn: sqlite3.Connection, profile_id: int) -> set[int]:
+    """Media file ids the profile has finished — excluded from recommendation rows."""
+    rows = conn.execute(
+        "SELECT media_file_id FROM watch_progress WHERE profile_id = ? AND completed = 1",
+        (profile_id,),
+    ).fetchall()
+    return {r["media_file_id"] for r in rows}
+
+
+def get_ratings(
+    conn: sqlite3.Connection, profile_id: int
+) -> dict[tuple[str, int], int]:
+    """Explicit thumbs signals keyed by ('movie'|'show', id) → value (+1 / -1)."""
+    rows = conn.execute(
+        "SELECT movie_id, show_id, value FROM ratings WHERE profile_id = ?",
+        (profile_id,),
+    ).fetchall()
+    out: dict[tuple[str, int], int] = {}
+    for r in rows:
+        if r["movie_id"] is not None:
+            out[("movie", r["movie_id"])] = r["value"]
+        elif r["show_id"] is not None:
+            out[("show", r["show_id"])] = r["value"]
+    return out
+
+
+def upsert_rating(
+    conn: sqlite3.Connection,
+    profile_id: int,
+    *,
+    movie_id: int | None = None,
+    show_id: int | None = None,
+    value: int,
+) -> None:
+    """Record a thumbs up/down for a movie or show, replacing any prior value.
+
+    Exactly one of ``movie_id`` / ``show_id`` must be set. Done as delete-then-insert
+    because the nullable target columns can't be covered by a single UNIQUE constraint.
+    """
+    if (movie_id is None) == (show_id is None):
+        raise ValueError("exactly one of movie_id / show_id must be set")
+    if movie_id is not None:
+        conn.execute(
+            "DELETE FROM ratings WHERE profile_id = ? AND movie_id = ?",
+            (profile_id, movie_id),
+        )
+    else:
+        conn.execute(
+            "DELETE FROM ratings WHERE profile_id = ? AND show_id = ?",
+            (profile_id, show_id),
+        )
+    conn.execute(
+        "INSERT INTO ratings (profile_id, movie_id, show_id, value) VALUES (?, ?, ?, ?)",
+        (profile_id, movie_id, show_id, value),
+    )
+
+
 if __name__ == "__main__":  # `python -m backend.db` initializes the database.
     init_db()
     print(f"Initialized database at {settings.db_path}")

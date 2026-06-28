@@ -7,6 +7,7 @@ import {
   type ContinueItem,
   type DiscoverItem,
   type Library,
+  type RecRow,
 } from "../api/client";
 import { useProfile } from "../profile";
 import Hero from "../components/Hero";
@@ -17,6 +18,7 @@ export default function Home() {
   const { activeProfile } = useProfile();
   const [library, setLibrary] = useState<Library | null>(null);
   const [continueItems, setContinueItems] = useState<ContinueItem[]>([]);
+  const [recRows, setRecRows] = useState<RecRow[]>([]);
   const [trending, setTrending] = useState<DiscoverItem[]>([]);
   const [newReleases, setNewReleases] = useState<DiscoverItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +37,10 @@ export default function Home() {
     api
       .continueWatching(activeProfile.id)
       .then((r) => setContinueItems(r.items))
+      .catch(() => undefined);
+    api
+      .recommendationRows(activeProfile.id)
+      .then((r) => setRecRows(r.rows))
       .catch(() => undefined);
   }, [activeProfile]);
 
@@ -70,6 +76,20 @@ export default function Home() {
             ))}
           </PosterRow>
         )}
+
+        {recRows.map((row) => (
+          <PosterRow key={row.key} title={row.title}>
+            {row.items.map((it) => (
+              <PosterCard
+                key={`${row.key}-${it.kind}-${it.id}`}
+                title={it.title}
+                posterPath={it.poster_path}
+                to={`/title/${it.kind}/${it.id}`}
+                subtitle={it.reason}
+              />
+            ))}
+          </PosterRow>
+        ))}
 
         {library.movies.length > 0 && (
           <PosterRow title="Movies">

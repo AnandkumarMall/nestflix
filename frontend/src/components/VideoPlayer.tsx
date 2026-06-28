@@ -111,7 +111,7 @@ export default function VideoPlayer({ mediaFileId, profileId }: Props) {
         duration_seconds: duration || info.duration_seconds || 0,
         ...(event ? { event } : {}),
       };
-      if (beacon && navigator.sendBeacon) {
+      if (beacon && typeof navigator.sendBeacon === "function") {
         api.saveProgressBeacon(body);
       } else {
         api.saveProgress(body).catch(() => undefined);
