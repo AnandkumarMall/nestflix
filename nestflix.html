@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nestflix</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --netflix-red: #E50914;
+    --netflix-black: #141414;
+    --netflix-dark: #181818;
+    --netflix-gray: #808080;
+    --netflix-light-gray: #B3B3B3;
+    --netflix-white: #E5E5E5;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: var(--netflix-black);
+    color: white;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 0px; background: transparent; }
+  .row-scroll::-webkit-scrollbar { height: 0px; }
+
+  /* Netflix Logo */
+  .netflix-logo {
+    fill: var(--netflix-red);
+    width: 92px;
+    height: 26px;
+  }
+
+  /* Profile Gate */
+  .profile-gate {
+    background: var(--netflix-black);
+    position: fixed; inset: 0; z-index: 1000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    animation: fadeIn 0.4s ease;
+  }
+
+  .profile-avatar {
+    width: 120px; height: 120px; border-radius: 4px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+    border: 3px solid transparent;
+    cursor: pointer; transition: all 0.3s ease;
+    position: relative; overflow: hidden;
+  }
+  .profile-avatar:hover { border-color: white; transform: scale(1.05); }
+  .profile-avatar::after {
+    content: attr(data-initial);
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 48px; font-weight: 700; color: white; text-transform: uppercase;
+  }
+
+  /* Navigation */
+  .nav-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 900;
+    padding: 0 4%;
+    height: 68px; display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.7) 10%, transparent);
+    transition: background-color 0.4s ease;
+  }
+  .nav-bar.scrolled { background-color: var(--netflix-black); }
+  .nav-link {
+    color: var(--netflix-white); text-decoration: none; font-size: 14px;
+    margin-left: 20px; transition: color 0.2s; cursor: pointer;
+  }
+  .nav-link:hover { color: var(--netflix-light-gray); }
+
+  /* Hero */
+  .hero {
+    position: relative; height: 80vh; min-height: 700px;
+    background-size: cover; background-position: center top;
+    display: flex; align-items: flex-end; padding: 0 4% 180px;
+  }
+  .hero::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(to top, var(--netflix-black) 0%, transparent 60%),
+                linear-gradient(to right, rgba(0,0,0,0.4) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .hero-content { position: relative; z-index: 2; max-width: 650px; }
+  .hero-title { font-size: 48px; font-weight: 800; margin-bottom: 16px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+  .hero-meta { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; font-size: 14px; }
+  .hero-match { color: #46d369; font-weight: 600; }
+  .hero-rating { border: 1px solid rgba(255,255,255,0.4); padding: 2px 6px; font-size: 12px; }
+  .hero-desc { font-size: 16px; line-height: 1.5; color: #d2d2d2; margin-bottom: 24px; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+  .hero-buttons { display: flex; gap: 12px; }
+  .btn-play {
+    background: white; color: black; border: none; padding: 8px 24px;
+    font-size: 16px; font-weight: 600; border-radius: 4px; cursor: pointer;
+    display: flex; align-items: center; gap: 8px; transition: opacity 0.2s;
+  }
+  .btn-play:hover { opacity: 0.8; }
+  .btn-info {
+    background: rgba(109, 109, 110, 0.7); color: white; border: none;
+    padding: 8px 24px; font-size: 16px; font-weight: 600; border-radius: 4px;
+    cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s;
+  }
+  .btn-info:hover { background: rgba(109, 109, 110, 0.4); }
+
+  /* Content Rows */
+  .row { margin-bottom: 48px; padding: 0 4%; position: relative; }
+  .row-title { font-size: 20px; font-weight: 600; margin-bottom: 12px; color: var(--netflix-white); }
+  .row-container { display: flex; gap: 8px; overflow-x: auto; scroll-behavior: smooth; padding: 20px 0; }
+
+  .card {
+    flex: 0 0 auto; width: 16%; min-width: 200px; aspect-ratio: 2/3;
+    border-radius: 4px; overflow: hidden; cursor: pointer;
+    position: relative; transition: transform 0.3s ease, margin 0.3s ease;
+    background: #333;
+  }
+  .card:hover {
+    transform: scale(1.4); z-index: 10;
+    margin: 0 60px;
+  }
+  .card-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .card-info {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+    padding: 40px 12px 12px; opacity: 0; transition: opacity 0.3s ease;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .card:hover .card-info { opacity: 1; }
+  .card-actions { display: flex; gap: 8px; align-items: center; }
+  .card-btn {
+    width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.6);
+    background: transparent; color: white; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s; padding: 0;
+  }
+  .card-btn:hover { border-color: white; background: rgba(255,255,255,0.1); }
+  .card-btn.play { background: white; color: black; border-color: white; }
+  .card-btn.play:hover { opacity: 0.8; }
+  .card-meta { font-size: 10px; color: var(--netflix-light-gray); display: flex; gap: 8px; align-items: center; }
+  .card-match { color: #46d369; font-weight: 600; }
+  .card-tags { font-size: 10px; color: var(--netflix-light-gray); }
+
+  /* Progress bar on card */
+  .card-progress {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+    background: rgba(255,255,255,0.2);
+  }
+  .card-progress-bar { height: 100%; background: var(--netflix-red); width: 0%; }
+
+  /* Row Navigation Arrows */
+  .row-arrow {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 60px; height: 100%; background: rgba(0,0,0,0.5);
+    border: none; color: white; cursor: pointer; z-index: 5;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .row:hover .row-arrow { opacity: 1; }
+  .row-arrow.left { left: 0; }
+  .row-arrow.right { right: 0; }
+
+  /* Detail Modal */
+  .detail-modal {
+    position: fixed; inset: 0; z-index: 950; overflow-y: auto;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);
+    display: none; opacity: 0; transition: opacity 0.3s;
+  }
+  .detail-modal.active { display: block; opacity: 1; }
+  .detail-content {
+    max-width: 850px; margin: 40px auto;
+    background: var(--netflix-dark); border-radius: 8px; overflow: hidden;
+    position: relative;
+  }
+  .detail-hero { position: relative; height: 480px; background-size: cover; background-position: center; }
+  .detail-hero::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(to top, var(--netflix-dark) 0%, transparent 60%);
+  }
+  .detail-close {
+    position: absolute; top: 16px; right: 16px; z-index: 10;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: #181818; border: none; color: white; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .detail-body { padding: 24px 48px 48px; margin-top: -80px; position: relative; z-index: 2; }
+  .detail-title { font-size: 36px; font-weight: 700; margin-bottom: 16px; }
+  .detail-meta { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; font-size: 14px; }
+  .detail-match { color: #46d369; font-weight: 700; }
+  .detail-age { border: 1px solid rgba(255,255,255,0.4); padding: 2px 8px; font-size: 12px; }
+  .detail-hd { border: 1px solid rgba(255,255,255,0.4); padding: 2px 6px; font-size: 10px; border-radius: 2px; }
+  .detail-desc { font-size: 16px; line-height: 1.6; color: #d2d2d2; margin-bottom: 24px; }
+  .detail-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 40px; margin-bottom: 32px; }
+  .detail-cast { font-size: 14px; color: var(--netflix-light-gray); line-height: 1.8; }
+  .detail-cast strong { color: white; }
+  .detail-section-title { font-size: 20px; font-weight: 600; margin: 32px 0 16px; }
+  .episodes-list { display: flex; flex-direction: column; gap: 8px; }
+  .episode-item {
+    display: grid; grid-template-columns: 50px 1fr 60px; align-items: center;
+    padding: 16px; background: rgba(255,255,255,0.05); border-radius: 4px; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .episode-item:hover { background: rgba(255,255,255,0.1); }
+  .episode-num { font-size: 24px; color: var(--netflix-light-gray); }
+  .episode-title { font-weight: 600; margin-bottom: 4px; }
+  .episode-desc { font-size: 14px; color: var(--netflix-light-gray); line-height: 1.4; }
+  .episode-duration { text-align: right; color: var(--netflix-light-gray); }
+  .episode-thumb { width: 120px; height: 68px; background: #333; border-radius: 4px; margin-right: 16px; flex-shrink: 0; }
+
+  /* Similar grid */
+  .similar-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .similar-card {
+    background: #2a2a2a; border-radius: 4px; overflow: hidden; cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .similar-card:hover { transform: scale(1.02); }
+  .similar-img { width: 100%; aspect-ratio: 16/9; object-fit: cover; }
+  .similar-info { padding: 12px; }
+  .similar-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .similar-match { color: #46d369; font-size: 12px; font-weight: 600; }
+  .similar-age { border: 1px solid rgba(255,255,255,0.4); padding: 1px 4px; font-size: 10px; }
+
+  /* Video Player */
+  .player {
+    position: fixed; inset: 0; z-index: 1000; background: black;
+    display: none; flex-direction: column;
+  }
+  .player.active { display: flex; }
+  .player-video-container {
+    flex: 1; position: relative; display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  video { max-width: 100%; max-height: 100%; width: 100%; height: 100%; object-fit: contain; }
+
+  /* Player Overlays */
+  .player-top {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+    padding: 24px 48px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+    display: flex; align-items: center; gap: 16px;
+    opacity: 0; transition: opacity 0.3s; pointer-events: none;
+  }
+  .player-top.visible { opacity: 1; pointer-events: auto; }
+  .player-back {
+    background: none; border: none; color: white; cursor: pointer;
+    font-size: 28px; display: flex; align-items: center;
+  }
+  .player-title { font-size: 16px; font-weight: 500; }
+  .player-subtitle { font-size: 13px; color: var(--netflix-light-gray); }
+
+  .player-center {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    pointer-events: none; z-index: 5;
+  }
+  .center-play {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: rgba(0,0,0,0.5); border: 2px solid white;
+    color: white; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; opacity: 0; transition: opacity 0.3s, transform 0.2s;
+    pointer-events: auto;
+  }
+  .player-video-container:hover .center-play { opacity: 1; }
+  .center-play:hover { transform: scale(1.1); }
+
+  .skip-intro {
+    position: absolute; bottom: 120px; right: 48px; z-index: 10;
+    background: rgba(255,255,255,0.9); color: black; border: none;
+    padding: 12px 24px; font-size: 14px; font-weight: 700; border-radius: 4px;
+    cursor: pointer; display: none; animation: slideIn 0.3s ease;
+  }
+  .skip-intro.show { display: block; }
+
+  .next-episode {
+    position: absolute; bottom: 120px; right: 48px; z-index: 10;
+    background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px; padding: 16px; width: 320px; display: none;
+  }
+  .next-episode.show { display: block; }
+  .next-thumb { width: 100%; aspect-ratio: 16/9; background: #333; border-radius: 4px; margin-bottom: 12px; }
+  .next-title { font-weight: 600; margin-bottom: 4px; }
+  .next-countdown { font-size: 14px; color: var(--netflix-light-gray); margin-bottom: 12px; }
+  .next-actions { display: flex; gap: 8px; }
+  .next-btn { flex: 1; padding: 8px; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; }
+  .next-btn.play { background: white; color: black; }
+  .next-btn.cancel { background: rgba(255,255,255,0.2); color: white; }
+
+  /* Control Bar */
+  .controls {
+    position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
+    padding: 0 48px 24px;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    opacity: 0; transition: opacity 0.3s; pointer-events: none;
+  }
+  .controls.visible { opacity: 1; pointer-events: auto; }
+
+  .progress-area {
+    width: 100%; height: 24px; display: flex; align-items: center;
+    position: relative; cursor: pointer; margin-bottom: 8px;
+  }
+  .progress-bar {
+    width: 100%; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px;
+    position: relative; transition: height 0.1s;
+  }
+  .progress-area:hover .progress-bar { height: 6px; }
+  .progress-fill {
+    height: 100%; background: var(--netflix-red); border-radius: 2px;
+    width: 0%; position: relative;
+  }
+  .progress-fill::after {
+    content: ''; position: absolute; right: -6px; top: 50%; transform: translateY(-50%);
+    width: 12px; height: 12px; border-radius: 50%; background: var(--netflix-red);
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .progress-area:hover .progress-fill::after { opacity: 1; }
+  .progress-time {
+    position: absolute; top: -30px; transform: translateX(-50%);
+    background: rgba(0,0,0,0.8); padding: 4px 8px; border-radius: 4px;
+    font-size: 12px; display: none; pointer-events: none;
+  }
+  .progress-area:hover .progress-time { display: block; }
+
+  .controls-row {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .controls-left, .controls-right { display: flex; align-items: center; gap: 16px; }
+  .ctrl-btn {
+    background: none; border: none; color: white; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    padding: 4px; transition: transform 0.1s;
+  }
+  .ctrl-btn:hover { transform: scale(1.1); }
+  .ctrl-btn svg { width: 24px; height: 24px; }
+
+  .volume-container { position: relative; display: flex; align-items: center; }
+  .volume-slider {
+    width: 0; overflow: hidden; transition: width 0.2s;
+    appearance: none; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px;
+  }
+  .volume-container:hover .volume-slider { width: 80px; margin-left: 8px; }
+  .volume-slider::-webkit-slider-thumb {
+    appearance: none; width: 12px; height: 12px; border-radius: 50%; background: white; cursor: pointer;
+  }
+
+  .time-display { font-size: 14px; color: var(--netflix-light-gray); font-variant-numeric: tabular-nums; }
+
+  /* Settings Menus */
+  .settings-menu {
+    position: absolute; bottom: 60px; right: 48px;
+    background: rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 12px 0; min-width: 240px;
+    display: none; z-index: 20;
+  }
+  .settings-menu.show { display: block; }
+  .settings-item {
+    padding: 10px 16px; cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+    font-size: 14px; transition: background 0.2s;
+  }
+  .settings-item:hover { background: rgba(255,255,255,0.1); }
+  .settings-item.active { color: var(--netflix-red); }
+  .settings-divider { height: 1px; background: rgba(255,255,255,0.1); margin: 8px 0; }
+  .settings-label { font-size: 12px; color: var(--netflix-light-gray); padding: 0 16px 8px; }
+
+  /* Subtitle Overlay */
+  .subtitle-overlay {
+    position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+    text-align: center; pointer-events: none; z-index: 8;
+    transition: bottom 0.3s;
+  }
+  .subtitle-text {
+    background: rgba(0,0,0,0.6); padding: 4px 12px; border-radius: 4px;
+    font-size: 20px; font-weight: 600; color: white; text-shadow: 1px 1px 2px black;
+    line-height: 1.4;
+  }
+
+  /* Search */
+  .search-screen {
+    position: fixed; inset: 0; z-index: 800; background: var(--netflix-black);
+    display: none; padding: 100px 4% 40px; overflow-y: auto;
+  }
+  .search-screen.active { display: block; }
+  .search-input-container {
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--netflix-light-gray); padding-bottom: 8px; margin-bottom: 40px;
+  }
+  .search-input {
+    background: none; border: none; color: white; font-size: 24px;
+    outline: none; width: 100%;
+  }
+  .search-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+  .search-card { aspect-ratio: 2/3; background: #333; border-radius: 4px; cursor: pointer; overflow: hidden; }
+  .search-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+  .search-card:hover img { transform: scale(1.05); }
+
+  /* Animations */
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  .loading-spinner {
+    width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.3);
+    border-top-color: var(--netflix-red); border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Responsive */
+  @media (max-width: 1200px) { .card { width: 20%; } }
+  @media (max-width: 900px) { .card { width: 25%; } .hero-title { font-size: 32px; } }
+  @media (max-width: 600px) { .card { width: 33.33%; } .hero { height: 60vh; } .detail-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<!-- PROFILE GATE -->
+<div id="profileGate" class="profile-gate">
+  <h1 style="font-size: 32px; font-weight: 500; margin-bottom: 40px;">Who's watching?</h1>
+  <div style="display: flex; gap: 32px; flex-wrap: wrap; justify-content: center;">
+    <div class="profile-item" style="text-align: center; cursor: pointer;" onclick="selectProfile('User')">
+      <div class="profile-avatar" data-initial="U" style="background: linear-gradient(135deg, #ff6b6b, #ee5a5a);"></div>
+      <p style="margin-top: 16px; color: var(--netflix-light-gray); font-size: 14px;">User</p>
+    </div>
+    <div class="profile-item" style="text-align: center; cursor: pointer;" onclick="selectProfile('Kids')">
+      <div class="profile-avatar" data-initial="K" style="background: linear-gradient(135deg, #4ecdc4, #44a08d);"></div>
+      <p style="margin-top: 16px; color: var(--netflix-light-gray); font-size: 14px;">Kids</p>
+    </div>
+  </div>
+  <button style="margin-top: 48px; background: none; border: 1px solid var(--netflix-light-gray); color: var(--netflix-light-gray); padding: 8px 24px; font-size: 14px; cursor: pointer; letter-spacing: 1px;">MANAGE PROFILES</button>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display: none;">
+  <!-- Navigation -->
+  <nav class="nav-bar" id="navbar">
+    <div style="display: flex; align-items: center; gap: 24px;">
+      <svg class="netflix-logo" viewBox="0 0 111 30" style="cursor: pointer;" onclick="goHome()">
+        <path d="M105.062 14.28L111 30c-1.75-.25-3.499-.563-5.28-.845l-3.345-8.686-3.437 7.969c-1.687-.282-3.344-.376-5.031-.595l6.031-12.75-5.25-10.5c1.5-.156 2.969-.344 4.469-.5l3.188 8.344 3.156-7.875c1.688-.187 3.375-.375 5.062-.625l-6.125 12.844zM90.47 0H81.28l-.125 30c2.625-.375 5.25-.75 7.875-1.125V0zM64.25 28.625c-2.625.375-5.25.75-7.875 1.125V0h9.125v28.625zM49.469 1.875v27.125c-2.625.375-5.25.75-7.875 1.125V1.875H33.125V0h25.25v1.875h-8.906zM24.938 0v30c-2.625-.375-5.25-.75-7.875-1.125V0h7.875zM12.594 0L0 30l12.469-.031c1.781-.031 3.531-.156 5.281-.281L19.5 17.5l3.5 11.25c1.875-.156 3.75-.281 5.625-.406L16.031 0h-3.437z"/>
+      </svg>
+      <div style="display: flex;" id="navLinks">
+        <a class="nav-link" onclick="goHome()">Home</a>
+        <a class="nav-link">TV Shows</a>
+        <a class="nav-link">Movies</a>
+        <a class="nav-link">New & Popular</a>
+        <a class="nav-link">My List</a>
+        <a class="nav-link">Browse by Languages</a>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 20px;">
+      <button class="ctrl-btn" onclick="toggleSearch()" style="position: relative;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      </button>
+      <button class="ctrl-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </button>
+      <div style="display: flex; align-items: center; gap: 8px; cursor: pointer;" onclick="location.reload()">
+        <div style="width: 32px; height: 32px; border-radius: 4px; background: linear-gradient(135deg, #ff6b6b, #ee5a5a); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;">U</div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M7 10l5 5 5-5z"/></svg>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Home Screen -->
+  <div id="homeScreen">
+    <div class="hero" id="hero" style="background-image: url('https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?w=1920&q=80');">
+      <div class="hero-content">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+          <span style="color: var(--netflix-red); font-weight: 700; font-size: 14px; letter-spacing: 2px;">N E S T F L I X</span>
+          <span style="color: rgba(255,255,255,0.7); font-size: 14px;">ORIGINAL</span>
+        </div>
+        <h1 class="hero-title" id="heroTitle">The Midnight Heist</h1>
+        <div class="hero-meta">
+          <span class="hero-match">98% Match</span>
+          <span>2024</span>
+          <span class="hero-rating">16+</span>
+          <span>2h 14m</span>
+          <span style="font-size: 10px; border: 1px solid rgba(255,255,255,0.4); padding: 1px 4px;">HD</span>
+        </div>
+        <p class="hero-desc" id="heroDesc">A master thief assembles an unlikely crew to pull off the most daring robbery in history. With time running out and enemies closing in, the line between trust and betrayal has never been thinner.</p>
+        <div class="hero-buttons">
+          <button class="btn-play" onclick="playHero()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="black"><path d="M8 5v14l11-7z"/></svg>
+            Play
+          </button>
+          <button class="btn-info" onclick="showDetail(0)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
+            More Info
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="rowsContainer"></div>
+  </div>
+
+  <!-- Search Screen -->
+  <div id="searchScreen" class="search-screen">
+    <div class="search-input-container">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" class="search-input" placeholder="Titles, people, genres" id="searchInput" oninput="handleSearch(this.value)">
+      <button class="ctrl-btn" onclick="toggleSearch()" style="font-size: 24px;">×</button>
+    </div>
+    <div id="searchResults"></div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div id="detailModal" class="detail-modal" onclick="closeDetail(event)">
+  <div class="detail-content" onclick="event.stopPropagation()">
+    <div class="detail-hero" id="detailHero" style="background-image: url('https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?w=1920&q=80');">
+      <button class="detail-close" onclick="closeDetail()">×</button>
+      <div style="position: absolute; bottom: 40px; left: 48px; z-index: 2; display: flex; gap: 12px;">
+        <button class="btn-play" onclick="playCurrent()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="black"><path d="M8 5v14l11-7z"/></svg>
+          Play
+        </button>
+        <button class="btn-info" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+          My List
+        </button>
+      </div>
+    </div>
+    <div class="detail-body">
+      <div class="detail-grid">
+        <div>
+          <div class="detail-meta">
+            <span class="detail-match" id="detailMatch">98% Match</span>
+            <span id="detailYear">2024</span>
+            <span class="detail-age" id="detailRating">16+</span>
+            <span class="detail-hd">HD</span>
+            <span style="color: var(--netflix-light-gray);">5.1</span>
+          </div>
+          <p class="detail-desc" id="detailDesc">A master thief assembles an unlikely crew to pull off the most daring robbery in history.</p>
+        </div>
+        <div class="detail-cast">
+          <div><strong>Cast:</strong> <span id="detailCast">Michael Chen, Sarah Johnson, David Park</span></div>
+          <div><strong>Genres:</strong> <span id="detailGenres">Action, Thriller, Crime</span></div>
+          <div><strong>This show is:</strong> <span id="detailTags">Suspenseful, Exciting</span></div>
+        </div>
+      </div>
+
+      <h3 class="detail-section-title">Episodes</h3>
+      <div class="episodes-list" id="episodesList"></div>
+
+      <h3 class="detail-section-title">More Like This</h3>
+      <div class="similar-grid" id="similarGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- VIDEO PLAYER -->
+<div id="player" class="player">
+  <div class="player-video-container" id="playerContainer">
+    <video id="video" preload="metadata" ontimeupdate="onTimeUpdate()" onloadedmetadata="onLoadedMetadata()" onclick="togglePlay()">
+      <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
+    </video>
+
+    <!-- Top Overlay -->
+    <div class="player-top" id="playerTop">
+      <button class="player-back" onclick="closePlayer()">←</button>
+      <div>
+        <div class="player-title" id="playerTitle">The Midnight Heist</div>
+        <div class="player-subtitle" id="playerSubtitle">S1:E1 "The Plan"</div>
+      </div>
+    </div>
+
+    <!-- Center Play -->
+    <div class="player-center">
+      <button class="center-play" id="centerPlay" onclick="togglePlay()">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+    </div>
+
+    <!-- Subtitles -->
+    <div class="subtitle-overlay" id="subtitleOverlay" style="bottom: 80px;">
+      <div class="subtitle-text" id="subtitleText"></div>
+    </div>
+
+    <!-- Skip Intro -->
+    <button class="skip-intro" id="skipIntro" onclick="skipIntro()">Skip Intro</button>
+
+    <!-- Next Episode -->
+    <div class="next-episode" id="nextEpisode">
+      <div class="next-thumb" style="background: url('https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=500&q=80') center/cover;"></div>
+      <div class="next-title">Next: S1:E2 "The Crew"</div>
+      <div class="next-countdown">Playing in <span id="countdownNum">5</span>s</div>
+      <div class="next-actions">
+        <button class="next-btn play" onclick="playNext()">Play Now</button>
+        <button class="next-btn cancel" onclick="cancelNext()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls" id="controls">
+      <div class="progress-area" id="progressArea" onclick="seek(event)" onmousemove="hoverProgress(event)">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-time" id="progressTime">0:00</div>
+      </div>
+      <div class="controls-row">
+        <div class="controls-left">
+          <button class="ctrl-btn" onclick="togglePlay()" id="playBtn">
+            <svg viewBox="0 0 24 24" fill="white"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>
+          </button>
+          <button class="ctrl-btn" onclick="skipBackward()">
+            <svg viewBox="0 0 24 24" fill="white"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
+          </button>
+          <div class="volume-container">
+            <button class="ctrl-btn" onclick="toggleMute()" id="muteBtn">
+              <svg viewBox="0 0 24 24" fill="white"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+            </button>
+            <input type="range" class="volume-slider" min="0" max="100" value="100" oninput="setVolume(this.value)">
+          </div>
+          <span class="time-display"><span id="currentTime">0:00</span> / <span id="duration">0:00</span></span>
+        </div>
+        <div class="controls-right">
+          <button class="ctrl-btn" onclick="toggleNextEpisode()" title="Next Episode">
+            <svg viewBox="0 0 24 24" fill="white"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+          </button>
+          <button class="ctrl-btn" onclick="toggleSubtitles()" title="Subtitles">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </button>
+          <button class="ctrl-btn" onclick="toggleAudioTracks()" title="Audio">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+          <button class="ctrl-btn" onclick="toggleFullscreen()" title="Fullscreen">
+            <svg viewBox="0 0 24 24" fill="white"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audio Menu -->
+    <div class="settings-menu" id="audioMenu" style="right: 120px;">
+      <div class="settings-label">Audio</div>
+      <div class="settings-item active" onclick="selectAudio(this, 'English')">English <span>✓</span></div>
+      <div class="settings-item" onclick="selectAudio(this, 'Español')">Español</div>
+      <div class="settings-item" onclick="selectAudio(this, 'Français')">Français</div>
+      <div class="settings-item" onclick="selectAudio(this, 'Deutsch')">Deutsch</div>
+      <div class="settings-item" onclick="selectAudio(this, '日本語')">日本語</div>
+    </div>
+
+    <!-- Subtitle Menu -->
+    <div class="settings-menu" id="subtitleMenu" style="right: 160px;">
+      <div class="settings-label">Subtitles</div>
+      <div class="settings-item active" onclick="selectSubtitle(this, 'off')">Off <span>✓</span></div>
+      <div class="settings-divider"></div>
+      <div class="settings-item" onclick="selectSubtitle(this, 'en')">English</div>
+      <div class="settings-item" onclick="selectSubtitle(this, 'es')">Español</div>
+      <div class="settings-item" onclick="selectSubtitle(this, 'fr')">Français</div>
+      <div class="settings-divider"></div>
+      <div class="settings-label">Position</div>
+      <div class="settings-item" onclick="setSubtitlePosition('bottom')">Bottom (Default)</div>
+      <div class="settings-item" onclick="setSubtitlePosition('center')">Center</div>
+      <div class="settings-item" onclick="setSubtitlePosition('top')">Top</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== DATA ====================
+const content = [
+  { id: 0, title: "The Midnight Heist", year: 2024, rating: "16+", duration: "2h 14m", match: 98, 
+    desc: "A master thief assembles an unlikely crew to pull off the most daring robbery in history. With time running out and enemies closing in, the line between trust and betrayal has never been thinner.",
+    cast: "Michael Chen, Sarah Johnson, David Park, Lisa Wong", genres: "Action, Thriller, Crime", tags: "Suspenseful, Exciting",
+    image: "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?w=500&q=80", backdrop: "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?w=1920&q=80",
+    type: "movie", progress: 0 },
+  { id: 1, title: "Neon Dreams", year: 2024, rating: "13+", duration: "1h 52m", match: 95,
+    desc: "In a rain-soaked metropolis where memories can be traded like currency, a memory detective discovers a conspiracy that threatens to erase humanity's past.",
+    cast: "Akira Tanaka, Emma Wilson, James Rodriguez", genres: "Sci-Fi, Thriller", tags: "Mind-bending, Dark",
+    image: "https://images.unsplash.com/photo-1535016120720-40c6874c3b13?w=500&q=80", backdrop: "https://images.unsplash.com/photo-1535016120720-40c6874c3b13?w=1920&q=80",
+    type: "movie", progress: 35 },
+  { id: 2, title: "The Last Frontier", year: 2023, rating: "16+", duration: "3 Seasons", match: 92,
+    desc: "When Earth's resources are depleted, a colony ship arrives at a habitable planet only to find they're not the first intelligent life to get there.",
+    cast: "Nina Patel, Robert Steele, Aisha Kone", genres: "Sci-Fi, Drama", tags: "Gritty, Emotional",
+    image: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=500&q=80", backdrop: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=1920&q=80",
+    type: "series", progress: 65, episodes: [
+      { num: 1, title: "Arrival", desc: "The colony ship arrives at Kepler-442b after 90 years in transit.", duration: "58m" },
+      { num: 2, title: "First Contact", desc: "The crew makes a discovery that changes everything they thought they knew.", duration: "61m" },
+      { num: 3, title: "The Ruins", desc: "An expedition into ancient structures reveals disturbing evidence.", duration: "55m" },
+      { num: 4, title: "Divided", desc: "Tensions rise as the crew debates their next move.", duration: "59m" },
+      { num: 5, title: "Sacrifice", desc: "A desperate plan requires an impossible choice.", duration: "63m" }
+    ]},
+  { id: 3, title: "Crimson Tide", year: 2024, rating: "18+", duration: "2h 28m", match: 89,
+    desc: "A submarine commander and his executive officer clash over the validity of a nuclear launch order.",
+    cast: "Tom Bradley, Eric Nunez", genres: "War, Thriller", tags: "Tense, Political",
+    image: "https://images.unsplash.com/photo-1559123791-4257555e41ee?w=500&q=80", backdrop: "https://images.unsplash.com/photo-1559123791-4257555e41ee?w=1920&q=80",
+    type: "movie", progress: 0 },
+  { id: 4, title: "Echoes of Yesterday", year: 2023, rating: "13+", duration: "1h 45m", match: 87,
+    desc: "A musician suffering from hearing loss discovers she can hear conversations from the past through her new hearing aid.",
+    cast: "Sophie Martin, Lucas Chen", genres: "Drama, Mystery", tags: "Emotional, Intimate",
+    image: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=500&q=80", backdrop: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=1920&q=80",
+    type: "movie", progress: 0 },
+  { id: 5, title: "Shadow Protocol", year: 2024, rating: "16+", duration: "2 Seasons", match: 94,
+    desc: "An elite black-ops team operates outside the law to prevent global catastrophes.",
+    cast: "Marcus Johnson, Priya Sharma, Leo Kim", genres: "Action, Espionage", tags: "Adrenaline, Complex",
+    image: "https://images.unsplash.com/photo-1509343256512-d77a5cb3791b?w=500&q=80", backdrop: "https://images.unsplash.com/photo-1509343256512-d77a5cb3791b?w=1920&q=80",
+    type: "series", progress: 12, episodes: [
+      { num: 1, title: "Ghost", desc: "The team is activated for a mission in Eastern Europe.", duration: "52m" },
+      { num: 2, title: "Dead Drop", desc: "A routine extraction goes sideways.", duration: "49m" },
+      { num: 3, title: "Protocol Zero", desc: "The team uncovers a mole within their own agency.", duration: "54m" }
+    ]},
+  { id: 6, title: "Velvet Nights", year: 2023, rating: "16+", duration: "1h 38m", match: 91,
+    desc: "A jazz singer in 1950s Harlem becomes entangled with the mob while fighting for her artistic freedom.",
+    cast: "Diana Ross II, John Legend", genres: "Drama, Music", tags: "Stylish, Romantic",
+    image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80", backdrop: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1920&q=80",
+    type: "movie", progress: 0 },
+  { id: 7, title: "Binary Souls", year: 2024, rating: "13+", duration: "2h 05m", match: 88,
+    desc: "Two programmers fall in love while building the world's first sentient AI, but the machine has other plans for their relationship.",
+    cast: "Alex Rivera, Jamie Park", genres: "Romance, Sci-Fi", tags: "Thought-provoking, Bittersweet",
+    image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=500&q=80", backdrop: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1920&q=80",
+    type: "movie", progress: 0 },
+  { id: 8, title: "The Deep", year: 2023, rating: "13+", duration: "4 Seasons", match: 90,
+    desc: "Marine biologists discover a civilization in the Mariana Trench that has been hiding for millennia.",
+    cast: "Rachel Green, Omar Fayed", genres: "Adventure, Sci-Fi", tags: "Mysterious, Visually Stunning",
+    image: "https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?w=500&q=80", backdrop: "https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?w=1920&q=80",
+    type: "series", progress: 0, episodes: [
+      { num: 1, title: "Descent", desc: "The research vessel prepares for the deepest dive in history.", duration: "45m" },
+      { num: 2, title: "Pressure", desc: "At 10,000 meters, the team encounters something impossible.", duration: "48m" }
+    ]},
+  { id: 9, title: "Iron Crown", year: 2024, rating: "16+", duration: "2h 33m", match: 96,
+    desc: "A medieval queen leads her army against an empire ten times the size of her kingdom.",
+    cast: "Florence Pugh, Oscar Isaac", genres: "Historical, War", tags: "Epic, Powerful",
+    image: "https://images.unsplash.com/photo-1595769816263-9b910be24d5f?w=500&q=80", backdrop: "https://images.unsplash.com/photo-1595769816263-9b910be24d5f?w=1920&q=80",
+    type: "movie", progress: 0 },
+  { id: 10, title: "Static", year: 2024, rating: "18+", duration: "1h 42m", match: 85,
+    desc: "A radio host receives calls from a frequency that doesn't exist, warning of tomorrow's disasters.",
+    cast: "Jake Gyllenhaal", genres: "Horror, Thriller", tags: "Creepy, Unsettling",
+    image: "https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=500&q=80", backdrop: "https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=1920&q=80",
+    type: "movie", progress: 0 },
+  { id: 11, title: "Green Horizon", year: 2023, rating: "7+", duration: "1h 28m", match: 93,
+    desc: "A documentary crew follows the last nomadic tribe of the Amazon as they fight to protect their home.",
+    cast: "Narrated by David Attenborough", genres: "Documentary, Nature", tags: "Inspiring, Beautiful",
+    image: "https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=500&q=80", backdrop: "https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=1920&q=80",
+    type: "movie", progress: 0 }
+];
+
+const rows = [
+  { title: "Continue Watching for You", items: [1, 2, 5], showProgress: true },
+  { title: "Trending Now", items: [0, 9, 3, 10, 7, 4] },
+  { title: "New Releases", items: [0, 5, 9, 10, 7] },
+  { title: "Sci-Fi & Fantasy", items: [1, 2, 7, 8, 5] },
+  { title: "Critically Acclaimed", items: [9, 4, 6, 0, 3] },
+  { title: "Because You Watched The Last Frontier", items: [2, 8, 5, 1, 7] }
+];
+
+const subtitles = {
+  en: [
+    { start: 5, end: 8, text: "We don't have much time." },
+    { start: 10, end: 14, text: "The security system resets in 90 seconds." },
+    { start: 16, end: 19, text: "Then we do this the hard way." },
+    { start: 25, end: 28, text: "Move! Move! Move!" },
+    { start: 35, end: 38, text: "We're in." },
+    { start: 45, end: 49, text: "Wait... something's not right here." },
+    { start: 55, end: 59, text: "It's a trap! Get out!" },
+    { start: 65, end: 69, text: "Go! I'll hold them off!" },
+    { start: 75, end: 79, text: "No one gets left behind." },
+    { start: 85, end: 89, text: "We finish this... together." }
+  ],
+  es: [
+    { start: 5, end: 8, text: "No tenemos mucho tiempo." },
+    { start: 10, end: 14, text: "El sistema de seguridad se reinicia en 90 segundos." },
+    { start: 16, end: 19, text: "Entonces lo haremos a la fuerza." },
+    { start: 25, end: 28, text: "¡Muévanse! ¡Muévanse!" },
+    { start: 35, end: 38, text: "Entramos." },
+    { start: 45, end: 49, text: "Espera... algo no está bien." },
+    { start: 55, end: 59, text: "¡Es una trampa! ¡Salgan!" },
+    { start: 65, end: 69, text: "¡Vayan! ¡Yo los detendré!" },
+    { start: 75, end: 79, text: "Nadie se queda atrás." },
+    { start: 85, end: 89, text: "Terminamos esto... juntos." }
+  ],
+  fr: [
+    { start: 5, end: 8, text: "Nous n'avons pas beaucoup de temps." },
+    { start: 10, end: 14, text: "Le système de sécurité se réinitialise dans 90 secondes." },
+    { start: 16, end: 19, text: "Alors nous le ferons à la dure." },
+    { start: 25, end: 28, text: "Allez ! Allez !" },
+    { start: 35, end: 38, text: "Nous y sommes." },
+    { start: 45, end: 49, text: "Attendez... quelque chose ne va pas." },
+    { start: 55, end: 59, text: "C'est un piège ! Sortez !" },
+    { start: 65, end: 69, text: "Allez-y ! Je les retiens !" },
+    { start: 75, end: 79, text: "Personne n'est laissé pour compte." },
+    { start: 85, end: 89, text: "Nous finissons ça... ensemble." }
+  ]
+};
+
+// ==================== STATE ====================
+let currentProfile = null;
+let currentDetail = null;
+let currentSubtitle = 'off';
+let subtitlePosition = 'bottom';
+let controlsTimeout = null;
+let nextEpisodeTimeout = null;
+let isPlaying = false;
+
+// ==================== PROFILE GATE ====================
+function selectProfile(name) {
+  currentProfile = name;
+  document.getElementById('profileGate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  initHome();
+}
+
+// ==================== HOME ====================
+function initHome() {
+  renderRows();
+  window.addEventListener('scroll', () => {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+  });
+}
+
+function renderRows() {
+  const container = document.getElementById('rowsContainer');
+  container.innerHTML = rows.map((row, idx) => `
+    <div class="row">
+      <h2 class="row-title">${row.title}</h2>
+      <button class="row-arrow left" onclick="scrollRow(${idx}, -1)">‹</button>
+      <button class="row-arrow right" onclick="scrollRow(${idx}, 1)">›</button>
+      <div class="row-container" id="row-${idx}">
+        ${row.items.map(id => renderCard(content[id], row.showProgress)).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderCard(item, showProgress) {
+  const progressHtml = showProgress && item.progress > 0 
+    ? `<div class="card-progress"><div class="card-progress-bar" style="width: ${item.progress}%"></div></div>` 
+    : '';
+  return `
+    <div class="card" onclick="showDetail(${item.id})">
+      <img class="card-img" src="${item.image}" alt="${item.title}" loading="lazy">
+      <div class="card-info">
+        <div class="card-actions">
+          <button class="card-btn play" onclick="event.stopPropagation(); playContent(${item.id})">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="black"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="card-btn" onclick="event.stopPropagation()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+          </button>
+          <button class="card-btn" onclick="event.stopPropagation()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </button>
+        </div>
+        <div class="card-meta">
+          <span class="card-match">${item.match}% Match</span>
+          <span class="card-age">${item.rating}</span>
+          <span>${item.duration}</span>
+        </div>
+        <div class="card-tags">${item.genres}</div>
+      </div>
+      ${progressHtml}
+    </div>
+  `;
+}
+
+function scrollRow(idx, dir) {
+  const row = document.getElementById(`row-${idx}`);
+  row.scrollBy({ left: dir * row.clientWidth * 0.8, behavior: 'smooth' });
+}
+
+function goHome() {
+  document.getElementById('homeScreen').style.display = 'block';
+  document.getElementById('searchScreen').classList.remove('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ==================== SEARCH ====================
+function toggleSearch() {
+  const screen = document.getElementById('searchScreen');
+  screen.classList.toggle('active');
+  if (screen.classList.contains('active')) {
+    document.getElementById('homeScreen').style.display = 'none';
+    setTimeout(() => document.getElementById('searchInput').focus(), 100);
+  } else {
+    goHome();
+  }
+}
+
+function handleSearch(query) {
+  const results = document.getElementById('searchResults');
+  if (!query) { results.innerHTML = ''; return; }
+  const filtered = content.filter(c => c.title.toLowerCase().includes(query.toLowerCase()));
+  results.innerHTML = filtered.length 
+    ? `<div class="search-grid">${filtered.map(c => `
+        <div class="search-card" onclick="showDetail(${c.id})">
+          <img src="${c.image}" alt="${c.title}">
+        </div>
+      `).join('')}</div>`
+    : '<p style="color: var(--netflix-light-gray); text-align: center; margin-top: 40px;">No results found</p>';
+}
+
+// ==================== DETAIL MODAL ====================
+function showDetail(id) {
+  const item = content[id];
+  currentDetail = item;
+  document.getElementById('detailHero').style.backgroundImage = `url('${item.backdrop}')`;
+  document.getElementById('detailTitle').textContent = item.title;
+  document.getElementById('detailMatch').textContent = item.match + '% Match';
+  document.getElementById('detailYear').textContent = item.year;
+  document.getElementById('detailRating').textContent = item.rating;
+  document.getElementById('detailDesc').textContent = item.desc;
+  document.getElementById('detailCast').textContent = item.cast;
+  document.getElementById('detailGenres').textContent = item.genres;
+  document.getElementById('detailTags').textContent = item.tags;
+
+  // Episodes
+  const epList = document.getElementById('episodesList');
+  if (item.episodes) {
+    epList.innerHTML = item.episodes.map((ep, i) => `
+      <div class="episode-item" onclick="playEpisode(${i})">
+        <div class="episode-num">${ep.num}</div>
+        <div style="display: flex; align-items: center;">
+          <div class="episode-thumb" style="background: url('${item.image}') center/cover;"></div>
+          <div>
+            <div class="episode-title">${ep.title}</div>
+            <div class="episode-desc">${ep.desc}</div>
+          </div>
+        </div>
+        <div class="episode-duration">${ep.duration}</div>
+      </div>
+    `).join('');
+  } else {
+    epList.innerHTML = '<p style="color: var(--netflix-light-gray); padding: 16px;">This is a movie. No episodes available.</p>';
+  }
+
+  // Similar
+  const similar = content.filter(c => c.id !== id).slice(0, 6);
+  document.getElementById('similarGrid').innerHTML = similar.map(c => `
+    <div class="similar-card" onclick="showDetail(${c.id})">
+      <div class="similar-img" style="background: url('${c.backdrop}') center/cover;"></div>
+      <div class="similar-info">
+        <div class="similar-meta">
+          <span class="similar-match">${c.match}% Match</span>
+          <span class="similar-age">${c.rating}</span>
+        </div>
+        <div style="font-size: 14px; font-weight: 500;">${c.title}</div>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('detailModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDetail(e) {
+  if (!e || e.target === document.getElementById('detailModal')) {
+    document.getElementById('detailModal').classList.remove('active');
+    document.body.style.overflow = '';
+  }
+}
+
+function playCurrent() {
+  closeDetail();
+  if (currentDetail) playContent(currentDetail.id);
+}
+
+function playHero() {
+  playContent(0);
+}
+
+// ==================== PLAYER ====================
+function playContent(id) {
+  const item = content[id];
+  currentDetail = item;
+  document.getElementById('playerTitle').textContent = item.title;
+  document.getElementById('playerSubtitle').textContent = item.type === 'series' ? 'S1:E1 "The Plan"' : item.duration;
+  document.getElementById('player').classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  const video = document.getElementById('video');
+  video.currentTime = 0;
+  video.play();
+  isPlaying = true;
+  updatePlayBtn();
+  showControls();
+
+  // Show skip intro at 10s
+  setTimeout(() => {
+    document.getElementById('skipIntro').classList.add('show');
+  }, 10000);
+}
+
+function playEpisode(idx) {
+  closeDetail();
+  document.getElementById('player').classList.add('active');
+  document.getElementById('playerSubtitle').textContent = `S1:E${idx+1} "${currentDetail.episodes[idx].title}"`;
+  const video = document.getElementById('video');
+  video.currentTime = 0;
+  video.play();
+  isPlaying = true;
+  updatePlayBtn();
+  showControls();
+}
+
+function closePlayer() {
+  document.getElementById('player').classList.remove('active');
+  document.body.style.overflow = '';
+  const video = document.getElementById('video');
+  video.pause();
+  isPlaying = false;
+  cancelNext();
+  document.getElementById('skipIntro').classList.remove('show');
+}
+
+function togglePlay() {
+  const video = document.getElementById('video');
+  if (video.paused) { video.play(); isPlaying = true; }
+  else { video.pause(); isPlaying = false; }
+  updatePlayBtn();
+  showControls();
+}
+
+function updatePlayBtn() {
+  const icon = isPlaying 
+    ? '<path d="M6 4h4v16H6zm8 0h4v16h-4z"/>'
+    : '<path d="M8 5v14l11-7z"/>';
+  document.getElementById('playBtn').innerHTML = `<svg viewBox="0 0 24 24" fill="white">${icon}</svg>`;
+  document.getElementById('centerPlay').innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="white">${icon}</svg>`;
+}
+
+function skipIntro() {
+  document.getElementById('video').currentTime = 85;
+  document.getElementById('skipIntro').classList.remove('show');
+}
+
+function skipBackward() {
+  const video = document.getElementById('video');
+  video.currentTime = Math.max(0, video.currentTime - 10);
+}
+
+// Progress & Time
+function onTimeUpdate() {
+  const video = document.getElementById('video');
+  const pct = (video.currentTime / video.duration) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('currentTime').textContent = formatTime(video.currentTime);
+
+  // Subtitles
+  updateSubtitles(video.currentTime);
+
+  // Auto next episode at end
+  if (video.duration - video.currentTime < 30 && video.currentTime > 30 && !nextEpisodeTimeout) {
+    showNextEpisode();
+  }
+}
+
+function onLoadedMetadata() {
+  document.getElementById('duration').textContent = formatTime(document.getElementById('video').duration);
+}
+
+function seek(e) {
+  const bar = document.getElementById('progressArea');
+  const rect = bar.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  const video = document.getElementById('video');
+  video.currentTime = pct * video.duration;
+}
+
+function hoverProgress(e) {
+  const bar = document.getElementById('progressArea');
+  const rect = bar.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  const video = document.getElementById('video');
+  const time = document.getElementById('progressTime');
+  time.textContent = formatTime(pct * video.duration);
+  time.style.left = (e.clientX - rect.left) + 'px';
+}
+
+function formatTime(s) {
+  if (!s || isNaN(s)) return '0:00';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+// Controls visibility
+const playerContainer = document.getElementById('playerContainer');
+playerContainer.addEventListener('mousemove', showControls);
+playerContainer.addEventListener('click', (e) => {
+  if (e.target === playerContainer || e.target.tagName === 'VIDEO') togglePlay();
+});
+
+function showControls() {
+  document.getElementById('controls').classList.add('visible');
+  document.getElementById('playerTop').classList.add('visible');
+  clearTimeout(controlsTimeout);
+  if (isPlaying) {
+    controlsTimeout = setTimeout(() => {
+      document.getElementById('controls').classList.remove('visible');
+      document.getElementById('playerTop').classList.remove('visible');
+    }, 3000);
+  }
+}
+
+// Volume
+function setVolume(val) {
+  document.getElementById('video').volume = val / 100;
+}
+function toggleMute() {
+  const video = document.getElementById('video');
+  video.muted = !video.muted;
+  const icon = video.muted
+    ? '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>'
+    : '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
+  document.getElementById('muteBtn').innerHTML = `<svg viewBox="0 0 24 24" fill="white">${icon}</svg>`;
+}
+
+// Subtitles
+function updateSubtitles(time) {
+  const overlay = document.getElementById('subtitleText');
+  if (currentSubtitle === 'off') { overlay.textContent = ''; return; }
+  const subs = subtitles[currentSubtitle] || [];
+  const active = subs.find(s => time >= s.start && time <= s.end);
+  overlay.textContent = active ? active.text : '';
+}
+
+function toggleSubtitles() {
+  const menu = document.getElementById('subtitleMenu');
+  menu.classList.toggle('show');
+  document.getElementById('audioMenu').classList.remove('show');
+}
+
+function selectSubtitle(el, lang) {
+  currentSubtitle = lang;
+  document.querySelectorAll('#subtitleMenu .settings-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  setTimeout(() => document.getElementById('subtitleMenu').classList.remove('show'), 200);
+}
+
+function setSubtitlePosition(pos) {
+  subtitlePosition = pos;
+  const overlay = document.getElementById('subtitleOverlay');
+  if (pos === 'top') overlay.style.bottom = 'auto', overlay.style.top = '80px';
+  else if (pos === 'center') overlay.style.bottom = '50%', overlay.style.top = 'auto';
+  else overlay.style.bottom = '80px', overlay.style.top = 'auto';
+  document.querySelectorAll('#subtitleMenu .settings-item').forEach((i, idx) => {
+    if (idx >= 5) i.classList.remove('active');
+  });
+  event.target.classList.add('active');
+}
+
+// Audio
+function toggleAudioTracks() {
+  const menu = document.getElementById('audioMenu');
+  menu.classList.toggle('show');
+  document.getElementById('subtitleMenu').classList.remove('show');
+}
+
+function selectAudio(el, track) {
+  document.querySelectorAll('#audioMenu .settings-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  setTimeout(() => document.getElementById('audioMenu').classList.remove('show'), 200);
+}
+
+// Next Episode
+function showNextEpisode() {
+  document.getElementById('nextEpisode').classList.add('show');
+  let count = 5;
+  const num = document.getElementById('countdownNum');
+  num.textContent = count;
+  nextEpisodeTimeout = setInterval(() => {
+    count--;
+    num.textContent = count;
+    if (count <= 0) { clearInterval(nextEpisodeTimeout); playNext(); }
+  }, 1000);
+}
+
+function playNext() {
+  cancelNext();
+  const video = document.getElementById('video');
+  video.currentTime = 0;
+  video.play();
+  document.getElementById('playerSubtitle').textContent = 'S1:E2 "The Crew"';
+}
+
+function cancelNext() {
+  clearInterval(nextEpisodeTimeout);
+  nextEpisodeTimeout = null;
+  document.getElementById('nextEpisode').classList.remove('show');
+}
+
+function toggleNextEpisode() {
+  if (!nextEpisodeTimeout) showNextEpisode();
+  else cancelNext();
+}
+
+// Fullscreen
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.getElementById('player').requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (!document.getElementById('player').classList.contains('active')) return;
+  switch(e.code) {
+    case 'Space': e.preventDefault(); togglePlay(); break;
+    case 'ArrowRight': document.getElementById('video').currentTime += 5; showControls(); break;
+    case 'ArrowLeft': document.getElementById('video').currentTime -= 5; showControls(); break;
+    case 'ArrowUp': e.preventDefault(); document.getElementById('video').volume = Math.min(1, document.getElementById('video').volume + 0.1); break;
+    case 'ArrowDown': e.preventDefault(); document.getElementById('video').volume = Math.max(0, document.getElementById('video').volume - 0.1); break;
+    case 'KeyF': toggleFullscreen(); break;
+    case 'KeyM': toggleMute(); break;
+    case 'Escape': closePlayer(); break;
+  }
+});
+</script>
+</body>
+</html>
