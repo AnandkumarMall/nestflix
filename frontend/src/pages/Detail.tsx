@@ -1,6 +1,6 @@
-// Title detail: backdrop, metadata, a Play/Resume button, thumbs rating, the episode
-// list (for shows), and a content-based "More Like This" row. Data comes from the
-// library endpoint plus the recommender's similar endpoint, matched by kind + id.
+// Title detail: backdrop, metadata, a Play/Resume button (if available), thumbs rating,
+// the episode list (for shows), and a content-based "More Like This" row.
+// Supports both local library titles and TMDB-only titles.
 
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -18,7 +18,7 @@ import PosterCard from "../components/PosterCard";
 import { parseGenres } from "../utils";
 
 export default function Detail() {
-  const { kind, id } = useParams<{ kind: string; id: string }>();
+  const { kind, id, source } = useParams<{ kind: string; id: string; source?: string }>();
   const navigate = useNavigate();
   const { activeProfile } = useProfile();
   const [library, setLibrary] = useState<Library | null>(null);
@@ -26,6 +26,7 @@ export default function Detail() {
   const [rating, setRating] = useState<1 | -1 | 0>(0);
 
   const numericId = Number(id);
+  const isTmdbOnly = source === "tmdb";
 
   useEffect(() => {
     api.library().then(setLibrary).catch(() => setLibrary({ movies: [], shows: [] }));
@@ -54,14 +55,15 @@ export default function Detail() {
 
   if (!library) return <div className="page-loading">Loading…</div>;
 
-  const movie =
-    kind === "movie"
-      ? library.movies.find((m) => m.id === numericId)
-      : undefined;
-  const show =
-    kind === "show" ? library.shows.find((s) => s.id === numericId) : undefined;
+  let movie: Movie | undefined;
+  let show: Show | undefined;
 
-  if (!movie && !show) {
+  if (!isTmdbOnly) {
+    movie = kind === "movie" ? library.movies.find((m) => m.id === numericId) : undefined;
+    show = kind === "show" ? library.shows.find((s) => s.id === numericId) : undefined;
+  }
+
+  if (!movie && !show && !isTmdbOnly) {
     return (
       <div className="page-error">
         Title not found. <Link to="/">Back home</Link>
@@ -73,6 +75,7 @@ export default function Detail() {
   const backdrop = imageUrl(item.backdrop_path, "w780");
   const title = item.title || item.parsed_title;
   const genres = parseGenres(item.genres);
+  const inLibrary = !!movie || !!show;
 
   function sendRating(value: 1 | -1) {
     if (!activeProfile) return;
@@ -104,12 +107,17 @@ export default function Detail() {
           {item.overview && <p className="detail-overview">{item.overview}</p>}
 
           <div className="detail-actions">
-            {movie && movie.media_file_id != null && (
+            {inLibrary && movie && movie.media_file_id != null && (
               <button
                 className="btn btn-play"
                 onClick={() => navigate(`/watch/${movie.media_file_id}`, { state: { title } })}
               >
                 ► Play
+              </button>
+            )}
+            {!inLibrary && (
+              <button className="btn btn-play" disabled title="Not in your library">
+                📭 Not in your library
               </button>
             )}
             <button

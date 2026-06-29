@@ -145,6 +145,17 @@ def _install_doh_resolver() -> None:
     _doh_installed = True
 
 
+def is_online() -> bool:
+    """Quick check if internet is available (ping 8.8.8.8 or 1.1.1.1)."""
+    for host in ("8.8.8.8", "1.1.1.1"):
+        try:
+            socket.create_connection((host, 53), timeout=2.0).close()
+            return True
+        except (socket.timeout, OSError):
+            continue
+    return False
+
+
 # ---------------------------------------------------------------------------
 # HTTP client + cached GET
 # ---------------------------------------------------------------------------
@@ -207,6 +218,13 @@ async def _get(
     cached = db.tmdb_cache_get(key, max_age_hours=max_age_hours)
     if cached is not None:
         return cached
+
+    # Check internet before attempting fresh API call. If offline, raise error with cached fallback instruction.
+    if not is_online():
+        raise TMDBError(
+            f"No internet connection. {path} data unavailable. "
+            "(Local library and watch history still work offline.)"
+        )
 
     params["api_key"] = api_key
     url = f"{API_BASE}/{path.lstrip('/')}"
@@ -290,6 +308,12 @@ async def trending(
 async def now_playing() -> list[dict[str, Any]]:
     """Movies currently in theaters / newly released. Cached for 12h."""
     data = await _get("movie/now_playing", max_age_hours=12.0)
+    return data.get("results", [])
+
+
+async def recommendations(media_type: str, tmdb_id: int) -> list[dict[str, Any]]:
+    """Similar titles to a TMDB ID (movie or tv). Cached for 24h."""
+    data = await _get(f"{media_type}/{tmdb_id}/recommendations", max_age_hours=24.0)
     return data.get("results", [])
 
 

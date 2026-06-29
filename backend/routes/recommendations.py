@@ -15,6 +15,7 @@ from starlette.concurrency import run_in_threadpool
 
 from .. import db
 from ..config import settings
+from ..recommender import external as external_mod
 from ..recommender import model as model_mod
 from ..recommender import rows as rows_mod
 from ..recommender.features import build_vocabulary
@@ -44,6 +45,21 @@ async def similar(kind: Literal["movie", "show"], id: int) -> dict:
     """Content-similarity neighbors of a title, for the detail page's More Like This."""
     items = await run_in_threadpool(rows_mod.similar_titles, kind, id)
     return {"kind": kind, "id": id, "items": items}
+
+
+@router.get("/external")
+async def external(profile_id: int) -> dict:
+    """TMDB-based discovery rows (similar titles NOT in local library)."""
+    conn = db.get_db()
+    try:
+        local_movies = set(r["id"] for r in conn.execute("SELECT id FROM movies").fetchall())
+        local_shows = set(r["id"] for r in conn.execute("SELECT id FROM shows").fetchall())
+        local_ids = local_movies | local_shows
+    finally:
+        conn.close()
+
+    rows = await external_mod.external_rows(profile_id, local_ids)
+    return {"profile_id": profile_id, "rows": rows}
 
 
 @router.get("/ratings")

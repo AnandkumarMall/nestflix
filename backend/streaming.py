@@ -189,7 +189,7 @@ async def ffmpeg_stream(path: Path, mode: str, start_seconds: float) -> Streamin
 # Subtitles — embedded (via ffmpeg) + sidecar files, served as WebVTT.
 # ---------------------------------------------------------------------------
 
-_SIDECAR_EXTS = {".srt", ".vtt"}
+_SIDECAR_EXTS = {".srt", ".vtt", ".ass"}
 _SRT_TIMESTAMP = re.compile(r"(\d{2}:\d{2}:\d{2}),(\d{3})")
 
 

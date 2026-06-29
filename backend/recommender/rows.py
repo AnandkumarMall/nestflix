@@ -124,10 +124,35 @@ def home_rows(profile_id: int) -> list[dict]:
 
 
 def _top_picks_row(candidates, cand_matrix, blended, taste, vocab) -> dict:
-    """The single best-blended-score row, with per-card taste explanations."""
-    order = np.argsort(blended)[::-1][:_ROW_SIZE]
-    items = []
+    """The single best-blended-score row, with genre diversity + per-card explanations."""
+    order = np.argsort(blended)[::-1]
+
+    # Diversify by genre: take top-2 per genre, fill remainder with best overall.
+    seen_genres: set[str] = set()
+    genre_counts: dict[str, int] = {}
+    diverse_order = []
+
     for i in order:
+        candidate = candidates[i]
+        genres = candidate.get("genres") or []
+        genre_list = genres if isinstance(genres, list) else [g.strip() for g in genres.split(",") if g.strip()]
+
+        # Prioritize items with genres we haven't seen much of yet.
+        added = False
+        for genre in genre_list:
+            if genre_counts.get(genre, 0) < 2 and len(diverse_order) < _ROW_SIZE:
+                diverse_order.append(i)
+                genre_counts[genre] = genre_counts.get(genre, 0) + 1
+                seen_genres.update(genre_list)
+                added = True
+                break
+
+        # If all genres have 2+, add anyway (fill up to _ROW_SIZE).
+        if not added and len(diverse_order) < _ROW_SIZE:
+            diverse_order.append(i)
+
+    items = []
+    for i in diverse_order:
         why = explain(taste.vector, cand_matrix[i], vocab)
         reason = f"Because you like {', '.join(why)}" if why else "Recommended for you"
         items.append(_to_item(candidates[i], reason, blended[i]))
@@ -197,7 +222,7 @@ def _cold_start_rows(candidates, vocab) -> list[dict]:
     popular = [
         _to_item(t, "Highly rated", t["rating"] or 0.0)
         for t in rated
-        if (t["rating"] or 0.0) > 0
+        if (t["rating"] or 0.0) >= 6.0
     ]
     if popular:
         rows.append(
