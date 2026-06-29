@@ -2,12 +2,20 @@
 // Background fades from transparent to solid once the page is scrolled (Netflix-style).
 
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useProfile } from "../profile";
 
 export default function NavBar() {
   const { activeProfile, profiles, setActiveProfile } = useProfile();
   const [scrolled, setScrolled] = useState(false);
+  const [query, setQuery] = useState("");
+  const navigate = useNavigate();
+
+  const submitSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = query.trim();
+    if (q) navigate(`/search?q=${encodeURIComponent(q)}`);
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50);
@@ -25,15 +33,26 @@ export default function NavBar() {
       </Link>
       <nav className="nav-links">
         <Link to="/">Home</Link>
+        <Link to="/stats">Stats</Link>
       </nav>
 
       <div className="nav-right">
-        <button className="nav-icon" aria-label="Search" title="Search">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <circle cx="11" cy="11" r="8" />
-            <path d="M21 21l-4.35-4.35" />
-          </svg>
-        </button>
+        <form className="nav-search" onSubmit={submitSearch} role="search">
+          <button className="nav-icon" type="submit" aria-label="Search" title="Search">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+          </button>
+          <input
+            className="nav-search-input"
+            type="search"
+            placeholder="Search titles…"
+            aria-label="Search your library"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </form>
 
         {activeProfile && (
           <div className="nav-profile">

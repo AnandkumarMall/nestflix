@@ -18,7 +18,15 @@ from fastapi.staticfiles import StaticFiles
 from . import tmdb
 from .config import settings
 from .db import init_db
-from .routes import discovery, images, library, playback, profiles, recommendations
+from .routes import (
+    discovery,
+    images,
+    library,
+    playback,
+    profiles,
+    recommendations,
+    stats,
+)
 
 
 @asynccontextmanager
@@ -47,6 +55,7 @@ app.include_router(playback.router)
 app.include_router(recommendations.router)
 app.include_router(discovery.router)
 app.include_router(images.router)
+app.include_router(stats.router)
 
 
 @app.get("/api/health")
