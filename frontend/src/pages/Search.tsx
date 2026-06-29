@@ -4,13 +4,9 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api, type SearchResult } from "../api/client";
+import { matchScore } from "../utils";
 import PosterRow from "../components/PosterRow";
 import PosterCard from "../components/PosterCard";
-
-// Cosmetic TMDB-style "match" score from the rating (mirrors Home).
-function matchScore(rating: number | null): number | null {
-  return rating != null ? Math.min(99, Math.round(rating * 9.5)) : null;
-}
 
 export default function Search() {
   const [params] = useSearchParams();

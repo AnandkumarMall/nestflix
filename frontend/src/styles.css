@@ -1123,6 +1123,12 @@ a {
   width: 180px;
 }
 
+@media (max-width: 768px) {
+  .nav-search-input {
+    width: 120px;
+  }
+}
+
 .nav-search-input::placeholder {
   color: var(--text-secondary);
 }
@@ -1180,6 +1186,16 @@ a {
   width: 120px;
   flex-shrink: 0;
   font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .genre-bar-label {
+    width: 80px;
+    font-size: 0.8rem;
+  }
 }
 
 .genre-bar-track {

@@ -20,3 +20,8 @@ export function parseGenres(raw: string | null | undefined): string[] {
     return [];
   }
 }
+
+/** TMDB-style "match" score from rating (0–99). */
+export function matchScore(rating: number | null): number | null {
+  return rating != null ? Math.min(99, Math.round(rating * 9.5)) : null;
+}

@@ -10,14 +10,10 @@ import {
   type RecRow,
 } from "../api/client";
 import { useProfile } from "../profile";
+import { matchScore } from "../utils";
 import Hero from "../components/Hero";
 import PosterRow from "../components/PosterRow";
 import PosterCard from "../components/PosterCard";
-
-// A cosmetic TMDB-style "match" score derived from the rating (mirrors Hero).
-function matchScore(rating: number | null): number | null {
-  return rating != null ? Math.min(99, Math.round(rating * 9.5)) : null;
-}
 
 export default function Home() {
   const { activeProfile } = useProfile();
