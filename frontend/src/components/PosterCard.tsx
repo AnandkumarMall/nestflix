@@ -2,9 +2,9 @@
 // on hover it scales up and reveals an info overlay (Netflix-style) with quick action
 // buttons, a "match" score, key metadata, and genres. Optionally shows a resume bar.
 
-import { Link, useNavigate } from "react-router-dom";
-import { imageUrl } from "../api/client";
-import { formatRuntime, parseGenres } from "../utils";
+import { Link, useNavigate } from 'react-router-dom';
+import { imageUrl } from '../api/client';
+import { formatRuntime, parseGenres } from '../utils';
 
 interface Props {
   title: string;
@@ -35,7 +35,7 @@ export default function PosterCard({
   genres,
 }: Props) {
   const navigate = useNavigate();
-  const src = imageUrl(posterPath, "w342");
+  const src = imageUrl(posterPath, 'w342');
   const runtimeLabel = formatRuntime(runtime);
   const genreList = parseGenres(genres);
 
@@ -80,7 +80,7 @@ export default function PosterCard({
         )}
 
         {genreList.length > 0 && (
-          <div className="card-tags">{genreList.slice(0, 3).join(" · ")}</div>
+          <div className="card-tags">{genreList.slice(0, 3).join(' · ')}</div>
         )}
       </div>
 

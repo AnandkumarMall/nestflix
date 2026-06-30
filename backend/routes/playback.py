@@ -86,11 +86,7 @@ async def read_progress(profile_id: int, media_file_id: int) -> dict:
 @router.post("/progress")
 async def save_progress(body: ProgressBody) -> dict:
     """Persist the current playback position and log a watch event."""
-    pct = (
-        body.position_seconds / body.duration_seconds
-        if body.duration_seconds > 0
-        else 0.0
-    )
+    pct = body.position_seconds / body.duration_seconds if body.duration_seconds > 0 else 0.0
     completed = pct >= _COMPLETE_FRACTION
     event = body.event or ("finish" if completed else "progress")
     conn = db.get_db()
@@ -106,9 +102,7 @@ async def save_progress(body: ProgressBody) -> dict:
         db.record_watch_event(conn, body.profile_id, body.media_file_id, event, pct)
         conn.commit()
     except sqlite3.IntegrityError as exc:
-        raise HTTPException(
-            status_code=400, detail="unknown profile or media file"
-        ) from exc
+        raise HTTPException(status_code=400, detail="unknown profile or media file") from exc
     finally:
         conn.close()
     return {"ok": True, "completed": completed}
@@ -165,9 +159,7 @@ async def stream(media_file_id: int, request: Request, t: float = 0.0) -> Respon
     play_mode = media_probe.decide_play_mode(media_file["container"], info)
 
     if play_mode == "direct":
-        return streaming.range_response(
-            path, request.headers.get("range"), media_file["container"]
-        )
+        return streaming.range_response(path, request.headers.get("range"), media_file["container"])
     if play_mode == "unavailable":
         raise HTTPException(
             status_code=409,

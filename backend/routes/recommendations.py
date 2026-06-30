@@ -52,8 +52,8 @@ async def external(profile_id: int) -> dict:
     """TMDB-based discovery rows (similar titles NOT in local library)."""
     conn = db.get_db()
     try:
-        local_movies = set(r["id"] for r in conn.execute("SELECT id FROM movies").fetchall())
-        local_shows = set(r["id"] for r in conn.execute("SELECT id FROM shows").fetchall())
+        local_movies = {r["id"] for r in conn.execute("SELECT id FROM movies").fetchall()}
+        local_shows = {r["id"] for r in conn.execute("SELECT id FROM shows").fetchall()}
         local_ids = local_movies | local_shows
     finally:
         conn.close()
@@ -82,9 +82,7 @@ async def ratings(profile_id: int) -> dict:
 async def rate(body: RatingBody) -> dict:
     """Record a thumbs up/down. Exactly one of movie_id / show_id must be provided."""
     if (body.movie_id is None) == (body.show_id is None):
-        raise HTTPException(
-            status_code=400, detail="provide exactly one of movie_id or show_id"
-        )
+        raise HTTPException(status_code=400, detail="provide exactly one of movie_id or show_id")
     conn = db.get_db()
     try:
         db.upsert_rating(
@@ -130,9 +128,7 @@ async def retrain(profile_id: int) -> dict:
             for h in history
             if h["media_file_id"] in by_media
         ]
-        trained = model_mod.train(
-            profile_id, entries, vocab, completed_count=completed_count
-        )
+        trained = model_mod.train(profile_id, entries, vocab, completed_count=completed_count)
         if trained is None:
             return {
                 "trained": False,

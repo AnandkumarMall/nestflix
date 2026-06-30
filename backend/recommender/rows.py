@@ -105,9 +105,7 @@ def home_rows(profile_id: int) -> list[dict]:
     if not taste.has_signal:
         return _cold_start_rows(candidates, vocab)
 
-    model = model_mod.maybe_retrain(
-        profile_id, entries, vocab, completed_count=completed_count
-    )
+    model = model_mod.maybe_retrain(profile_id, entries, vocab, completed_count=completed_count)
 
     cand_matrix = feature_matrix(candidates, vocab)
     content = np.clip(content_scores(taste.vector, cand_matrix), 0.0, None)
@@ -135,7 +133,11 @@ def _top_picks_row(candidates, cand_matrix, blended, taste, vocab) -> dict:
     for i in order:
         candidate = candidates[i]
         genres = candidate.get("genres") or []
-        genre_list = genres if isinstance(genres, list) else [g.strip() for g in genres.split(",") if g.strip()]
+        genre_list = (
+            genres
+            if isinstance(genres, list)
+            else [g.strip() for g in genres.split(",") if g.strip()]
+        )
 
         # Prioritize items with genres we haven't seen much of yet.
         added = False
@@ -164,17 +166,16 @@ def _because_you_watched_rows(
 ) -> list[dict]:
     """For the most recent finished titles, a row of their nearest content neighbors."""
     rows: list[dict] = []
-    seed_titles = [
-        e["title"] for e in entries if e["completed"] and e["title"]["genres"]
-    ][:max_rows]
+    seed_titles = [e["title"] for e in entries if e["completed"] and e["title"]["genres"]][
+        :max_rows
+    ]
     for seed in seed_titles:
         seed_vec = feature_vector(seed, vocab)
         sims = content_scores(seed_vec, cand_matrix)
         order = [
             i
             for i in np.argsort(sims)[::-1]
-            if candidates[i]["id"] != seed["id"]
-            or candidates[i]["kind"] != seed["kind"]
+            if candidates[i]["id"] != seed["id"] or candidates[i]["kind"] != seed["kind"]
         ][:_ROW_SIZE]
         items = [
             _to_item(candidates[i], f"Because you watched {seed['title']}", sims[i])
@@ -194,9 +195,7 @@ def _because_you_watched_rows(
 
 def _genre_rows(candidates, blended, taste, *, max_rows: int = 3) -> list[dict]:
     """Re-ranked rows for the profile's favorite genres (from the taste vector)."""
-    fav_genres = [
-        g for g in taste.dominant_features if not g.startswith(("Keyword:", "Stars"))
-    ]
+    fav_genres = [g for g in taste.dominant_features if not g.startswith(("Keyword:", "Stars"))]
     rows: list[dict] = []
     for genre in fav_genres:
         if len(rows) >= max_rows:
@@ -206,9 +205,7 @@ def _genre_rows(candidates, blended, taste, *, max_rows: int = 3) -> list[dict]:
             continue
         idx.sort(key=lambda i: blended[i], reverse=True)
         items = [_to_item(candidates[i], genre, blended[i]) for i in idx[:_ROW_SIZE]]
-        rows.append(
-            {"key": f"genre:{genre}", "title": f"{genre} You'll Like", "items": items}
-        )
+        rows.append({"key": f"genre:{genre}", "title": f"{genre} You'll Like", "items": items})
     return rows
 
 
@@ -216,25 +213,21 @@ def _cold_start_rows(candidates, vocab) -> list[dict]:
     """No history yet: surface highly-rated titles and the library's biggest genres."""
     rows: list[dict] = []
 
-    rated = sorted(candidates, key=lambda t: (t["rating"] or 0.0), reverse=True)[
-        :_ROW_SIZE
-    ]
+    rated = sorted(candidates, key=lambda t: t["rating"] or 0.0, reverse=True)[:_ROW_SIZE]
     popular = [
         _to_item(t, "Highly rated", t["rating"] or 0.0)
         for t in rated
         if (t["rating"] or 0.0) >= 6.0
     ]
     if popular:
-        rows.append(
-            {"key": "popular", "title": "Popular in Your Library", "items": popular}
-        )
+        rows.append({"key": "popular", "title": "Popular in Your Library", "items": popular})
 
     # Biggest genres in the (vocabulary already orders genres by frequency).
     for genre in vocab.genres[:3]:
         idx = [t for t in candidates if genre in t["genres"]]
         if len(idx) < _MIN_GENRE_ROW:
             continue
-        idx.sort(key=lambda t: (t["rating"] or 0.0), reverse=True)
+        idx.sort(key=lambda t: t["rating"] or 0.0, reverse=True)
         items = [_to_item(t, genre, t["rating"] or 0.0) for t in idx[:_ROW_SIZE]]
         rows.append({"key": f"genre:{genre}", "title": genre, "items": items})
 
@@ -255,9 +248,7 @@ def similar_titles(kind: str, title_id: int, *, limit: int = 12) -> list[dict]:
         return []
 
     vocab = build_vocabulary(titles)
-    target = next(
-        (t for t in titles if t["kind"] == kind and t["id"] == title_id), None
-    )
+    target = next((t for t in titles if t["kind"] == kind and t["id"] == title_id), None)
     if target is None:
         return []
 
@@ -268,6 +259,4 @@ def similar_titles(kind: str, title_id: int, *, limit: int = 12) -> list[dict]:
     target_vec = feature_vector(target, vocab)
     sims = content_scores(target_vec, matrix)
     order = np.argsort(sims)[::-1][:limit]
-    return [
-        _to_item(others[i], "More like this", sims[i]) for i in order if sims[i] > 0
-    ]
+    return [_to_item(others[i], "More like this", sims[i]) for i in order if sims[i] > 0]

@@ -8,9 +8,9 @@ calls — matching/enrichment is a separate feature; new rows start as match_sta
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable, Iterator
 
 from . import db, titleparser
 from .config import settings

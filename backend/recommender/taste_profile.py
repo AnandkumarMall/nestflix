@@ -58,9 +58,7 @@ def watch_weight(entry: dict) -> float:
     return float(entry.get("pct", 0.0)) * recency  # partial watch — partial credit.
 
 
-def build_taste_profile(
-    entries: list[dict], vocab: Vocabulary, *, top_k: int = 6
-) -> TasteProfile:
+def build_taste_profile(entries: list[dict], vocab: Vocabulary, *, top_k: int = 6) -> TasteProfile:
     """Weighted sum of watched titles' feature vectors → a normalized taste vector.
 
     Each entry is ``{"title": <title dict>, ...signal fields}`` (see ``watch_weight``).

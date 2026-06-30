@@ -1,7 +1,7 @@
 // Typed fetch wrappers for the Nestflix backend.
 // All backend calls go through this module — never raw fetch() in components.
 
-const BASE = "/api";
+const BASE = '/api';
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);
@@ -11,8 +11,8 @@ async function get<T>(path: string): Promise<T> {
 
 async function post<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`POST ${path} failed: ${res.status}`);
@@ -48,7 +48,7 @@ export interface Movie {
   rating: number | null;
   runtime: number | null;
   genres: string | null; // JSON array string
-  match_status: "pending" | "matched" | "unmatched";
+  match_status: 'pending' | 'matched' | 'unmatched';
   path: string;
   container: string;
   // Joined in get_library via media_files; the media_file id used for playback:
@@ -78,7 +78,7 @@ export interface Show {
   backdrop_path: string | null;
   rating: number | null;
   genres: string | null;
-  match_status: "pending" | "matched" | "unmatched";
+  match_status: 'pending' | 'matched' | 'unmatched';
   episodes: Episode[];
 }
 
@@ -100,13 +100,13 @@ export interface DiscoverItem {
   first_air_date?: string;
 }
 
-export type PlayMode = "direct" | "remux" | "transcode" | "unavailable";
+export type PlayMode = 'direct' | 'remux' | 'transcode' | 'unavailable';
 
 export interface SubtitleTrack {
   track: string;
   label: string;
   language: string | null;
-  kind: "embedded" | "sidecar";
+  kind: 'embedded' | 'sidecar';
 }
 
 export interface PlaybackInfo {
@@ -121,7 +121,7 @@ export interface PlaybackInfo {
   ffmpeg_available: boolean;
   subtitles: SubtitleTrack[];
   // Display metadata (movie or episode):
-  kind?: "movie" | "episode";
+  kind?: 'movie' | 'episode';
   title?: string;
   year?: number | null;
   season?: number;
@@ -142,7 +142,7 @@ export interface ContinueItem {
   media_file_id: number;
   position_seconds: number;
   duration_seconds: number;
-  kind: "movie" | "episode";
+  kind: 'movie' | 'episode';
   title: string;
   poster_path: string | null;
   backdrop_path: string | null;
@@ -153,7 +153,7 @@ export interface ContinueItem {
 
 // One recommended title (a card). `reason` is the human-readable explanation.
 export interface RecItem {
-  kind: "movie" | "show";
+  kind: 'movie' | 'show';
   id: number;
   title: string;
   year: number | null;
@@ -172,9 +172,7 @@ export interface RecRow {
 }
 
 // A local-library search hit: a movie or show, tagged with its `type`.
-export type SearchResult =
-  | ({ type: "movie" } & Movie)
-  | ({ type: "show" } & Show);
+export type SearchResult = ({ type: 'movie' } & Movie) | ({ type: 'show' } & Show);
 
 // Per-profile viewing summary for the Stats page.
 export interface Stats {
@@ -184,7 +182,7 @@ export interface Stats {
   ratings: { up: number; down: number };
   top_genres: { name: string; count: number }[];
   recently_finished: {
-    kind: "movie" | "show";
+    kind: 'movie' | 'show';
     id: number;
     title: string;
     poster_path: string | null;
@@ -196,16 +194,16 @@ export interface Stats {
 // ---------------------------------------------------------------------------
 
 /** Cached TMDB image URL (poster/backdrop/still path), or null if no path. */
-export function imageUrl(path: string | null | undefined, size = "w342"): string | null {
+export function imageUrl(path: string | null | undefined, size = 'w342'): string | null {
   if (!path) return null;
   // Local library stores bare filenames; raw TMDB paths have a leading slash. The image
   // route expects a bare "abc123.jpg", so strip any leading slashes.
-  return `${BASE}/images/${size}/${path.replace(/^\/+/, "")}`;
+  return `${BASE}/images/${size}/${path.replace(/^\/+/, '')}`;
 }
 
 /** Video stream URL for a media file. `t` is the start offset (ffmpeg modes only). */
 export function streamUrl(mediaFileId: number, t = 0): string {
-  const q = t > 0 ? `?t=${encodeURIComponent(t.toFixed(3))}` : "";
+  const q = t > 0 ? `?t=${encodeURIComponent(t.toFixed(3))}` : '';
   return `${BASE}/playback/${mediaFileId}/stream${q}`;
 }
 
@@ -215,26 +213,21 @@ export function subtitleUrl(mediaFileId: number, track: string): string {
 }
 
 export const api = {
-  health: () => get<Health>("/health"),
-  profiles: () => get<{ profiles: Profile[] }>("/profiles"),
-  library: () => get<Library>("/library"),
-  trending: () => get<{ items: DiscoverItem[] }>("/discovery/trending"),
-  newReleases: () => get<{ items: DiscoverItem[] }>("/discovery/new-releases"),
+  health: () => get<Health>('/health'),
+  profiles: () => get<{ profiles: Profile[] }>('/profiles'),
+  library: () => get<Library>('/library'),
+  trending: () => get<{ items: DiscoverItem[] }>('/discovery/trending'),
+  newReleases: () => get<{ items: DiscoverItem[] }>('/discovery/new-releases'),
 
   searchLibrary: (q: string) =>
-    get<{ query: string; results: SearchResult[] }>(
-      `/library/search?q=${encodeURIComponent(q)}`,
-    ),
+    get<{ query: string; results: SearchResult[] }>(`/library/search?q=${encodeURIComponent(q)}`),
 
   stats: (profileId: number) => get<Stats>(`/stats?profile_id=${profileId}`),
 
-  playbackInfo: (mediaFileId: number) =>
-    get<PlaybackInfo>(`/playback/${mediaFileId}/info`),
+  playbackInfo: (mediaFileId: number) => get<PlaybackInfo>(`/playback/${mediaFileId}/info`),
 
   readProgress: (profileId: number, mediaFileId: number) =>
-    get<WatchProgress>(
-      `/playback/progress?profile_id=${profileId}&media_file_id=${mediaFileId}`,
-    ),
+    get<WatchProgress>(`/playback/progress?profile_id=${profileId}&media_file_id=${mediaFileId}`),
 
   saveProgress: (body: {
     profile_id: number;
@@ -242,34 +235,28 @@ export const api = {
     position_seconds: number;
     duration_seconds: number;
     event?: string;
-  }) => post<{ ok: boolean; completed: boolean }>("/playback/progress", body),
+  }) => post<{ ok: boolean; completed: boolean }>('/playback/progress', body),
 
   continueWatching: (profileId: number) =>
     get<{ profile_id: number; items: ContinueItem[] }>(
-      `/playback/continue?profile_id=${profileId}`,
+      `/playback/continue?profile_id=${profileId}`
     ),
 
   recommendationRows: (profileId: number) =>
-    get<{ profile_id: number; rows: RecRow[] }>(
-      `/recommendations/rows?profile_id=${profileId}`,
-    ),
+    get<{ profile_id: number; rows: RecRow[] }>(`/recommendations/rows?profile_id=${profileId}`),
 
-  similar: (kind: "movie" | "show", id: number) =>
+  similar: (kind: 'movie' | 'show', id: number) =>
     get<{ kind: string; id: number; items: RecItem[] }>(
-      `/recommendations/similar?kind=${kind}&id=${id}`,
+      `/recommendations/similar?kind=${kind}&id=${id}`
     ),
 
   ratings: (profileId: number) =>
-    get<{ ratings: { kind: "movie" | "show"; id: number; value: 1 | -1 }[] }>(
-      `/recommendations/ratings?profile_id=${profileId}`,
+    get<{ ratings: { kind: 'movie' | 'show'; id: number; value: 1 | -1 }[] }>(
+      `/recommendations/ratings?profile_id=${profileId}`
     ),
 
-  rate: (body: {
-    profile_id: number;
-    movie_id?: number;
-    show_id?: number;
-    value: 1 | -1;
-  }) => post<{ ok: boolean }>("/recommendations/rate", body),
+  rate: (body: { profile_id: number; movie_id?: number; show_id?: number; value: 1 | -1 }) =>
+    post<{ ok: boolean }>('/recommendations/rate', body),
 
   saveProgressBeacon: (body: {
     profile_id: number;

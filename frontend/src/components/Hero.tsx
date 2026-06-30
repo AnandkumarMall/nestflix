@@ -2,21 +2,20 @@
 // ORIGINAL eyebrow, big title, a metadata bar (match / year / rating / runtime / HD),
 // a truncated synopsis, and Play / More Info actions.
 
-import { useNavigate } from "react-router-dom";
-import { imageUrl, type Movie } from "../api/client";
-import { formatRuntime, parseGenres } from "../utils";
+import { useNavigate } from 'react-router-dom';
+import { imageUrl, type Movie } from '../api/client';
+import { formatRuntime, parseGenres } from '../utils';
 
 export default function Hero({ movie }: { movie: Movie }) {
   const navigate = useNavigate();
-  const backdrop = imageUrl(movie.backdrop_path, "w780");
+  const backdrop = imageUrl(movie.backdrop_path, 'w780');
   const title = movie.title || movie.parsed_title;
   const genres = parseGenres(movie.genres);
   // A stable, pseudo-random "match" derived from the TMDB rating (cosmetic, like Netflix).
-  const match =
-    movie.rating != null ? Math.min(99, Math.round(movie.rating * 9.5)) : null;
+  const match = movie.rating != null ? Math.min(99, Math.round(movie.rating * 9.5)) : null;
   const runtimeLabel = formatRuntime(movie.runtime);
   // Cosmetic age-rating chip (we don't store certifications) — mirrors the reference.
-  const ageRating = movie.match_status === "matched" ? "16+" : "PG";
+  const ageRating = movie.match_status === 'matched' ? '16+' : 'PG';
 
   return (
     <div
@@ -27,7 +26,7 @@ export default function Hero({ movie }: { movie: Movie }) {
         <div className="hero-eyebrow">
           <span className="hero-brand">N E S T F L I X</span>
           <span className="hero-kind">
-            {movie.match_status === "matched" ? "FILM" : "ORIGINAL"}
+            {movie.match_status === 'matched' ? 'FILM' : 'ORIGINAL'}
           </span>
         </div>
 
@@ -41,9 +40,7 @@ export default function Hero({ movie }: { movie: Movie }) {
           <span className="hero-hd">HD</span>
         </div>
 
-        {genres.length > 0 && (
-          <div className="hero-genres">{genres.join(" · ")}</div>
-        )}
+        {genres.length > 0 && <div className="hero-genres">{genres.join(' · ')}</div>}
 
         {movie.overview && <p className="hero-overview">{movie.overview}</p>}
 

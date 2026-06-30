@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main, feature/*]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run ruff check
+        run: ruff check backend
+
+      - name: Run ruff format check
+        run: ruff format --check backend
+
+      - name: Run pytest
+        run: pytest
+
+  frontend:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['18.x', '20.x']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install dependencies
+        run: cd frontend && npm ci
+
+      - name: Run ESLint
+        run: cd frontend && npm run lint
+
+      - name: Check Prettier
+        run: cd frontend && npm run format:check
+
+      - name: Run TypeScript check
+        run: cd frontend && npm run build
+
+      - name: Run tests
+        run: cd frontend && npm test

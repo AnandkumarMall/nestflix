@@ -6,8 +6,6 @@ to help users discover titles not yet in their library.
 
 from __future__ import annotations
 
-from typing import Any
-
 from .. import db, tmdb
 
 

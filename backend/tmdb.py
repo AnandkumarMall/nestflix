@@ -75,9 +75,7 @@ def _doh_candidates(host: str) -> list[str]:
     ips: list[str] = []
     for url, headers in _DOH_RESOLVERS:
         try:
-            resp = httpx.get(
-                url, params={"name": host, "type": "A"}, headers=headers, timeout=8.0
-            )
+            resp = httpx.get(url, params={"name": host, "type": "A"}, headers=headers, timeout=8.0)
             resp.raise_for_status()
             answers = resp.json().get("Answer", [])
             ips += [a["data"] for a in answers if a.get("type") == 1]  # type 1 == A
@@ -97,9 +95,7 @@ def _probe_ip(host: str, ip: str) -> bool:
     try:
         with socket.create_connection((ip, 443), timeout=_PROBE_TIMEOUT) as sock:
             with ctx.wrap_socket(sock, server_hostname=host) as tls:
-                tls.sendall(
-                    f"GET / HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n".encode()
-                )
+                tls.sendall(f"GET / HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n".encode())
                 return tls.recv(16).startswith(b"HTTP/")
     except Exception:
         return False
@@ -151,7 +147,7 @@ def is_online() -> bool:
         try:
             socket.create_connection((host, 53), timeout=2.0).close()
             return True
-        except (socket.timeout, OSError):
+        except (TimeoutError, OSError):
             continue
     return False
 
@@ -297,9 +293,7 @@ async def tv_details(tmdb_id: int) -> dict[str, Any]:
     return await _get(f"tv/{tmdb_id}", {"append_to_response": "credits,keywords"})
 
 
-async def trending(
-    media_type: str = "all", window: str = "week"
-) -> list[dict[str, Any]]:
+async def trending(media_type: str = "all", window: str = "week") -> list[dict[str, Any]]:
     """Trending titles. Cached for 6h since the list changes slowly."""
     data = await _get(f"trending/{media_type}/{window}", max_age_hours=6.0)
     return data.get("results", [])

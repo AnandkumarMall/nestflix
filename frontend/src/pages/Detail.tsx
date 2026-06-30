@@ -2,20 +2,13 @@
 // the episode list (for shows), and a content-based "More Like This" row.
 // Supports both local library titles and TMDB-only titles.
 
-import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import {
-  api,
-  imageUrl,
-  type Library,
-  type Movie,
-  type RecItem,
-  type Show,
-} from "../api/client";
-import { useProfile } from "../profile";
-import PosterRow from "../components/PosterRow";
-import PosterCard from "../components/PosterCard";
-import { parseGenres } from "../utils";
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { api, imageUrl, type Library, type Movie, type RecItem, type Show } from '../api/client';
+import { useProfile } from '../profile';
+import PosterRow from '../components/PosterRow';
+import PosterCard from '../components/PosterCard';
+import { parseGenres } from '../utils';
 
 export default function Detail() {
   const { kind, id, source } = useParams<{ kind: string; id: string; source?: string }>();
@@ -26,15 +19,18 @@ export default function Detail() {
   const [rating, setRating] = useState<1 | -1 | 0>(0);
 
   const numericId = Number(id);
-  const isTmdbOnly = source === "tmdb";
+  const isTmdbOnly = source === 'tmdb';
 
   useEffect(() => {
-    api.library().then(setLibrary).catch(() => setLibrary({ movies: [], shows: [] }));
+    api
+      .library()
+      .then(setLibrary)
+      .catch(() => setLibrary({ movies: [], shows: [] }));
   }, []);
 
   useEffect(() => {
     setRating(0);
-    if (kind !== "movie" && kind !== "show") return;
+    if (kind !== 'movie' && kind !== 'show') return;
     api
       .similar(kind, numericId)
       .then((r) => setSimilar(r.items))
@@ -43,7 +39,7 @@ export default function Detail() {
 
   useEffect(() => {
     setRating(0);
-    if (!activeProfile || (kind !== "movie" && kind !== "show")) return;
+    if (!activeProfile || (kind !== 'movie' && kind !== 'show')) return;
     api
       .ratings(activeProfile.id)
       .then((r) => {
@@ -59,8 +55,8 @@ export default function Detail() {
   let show: Show | undefined;
 
   if (!isTmdbOnly) {
-    movie = kind === "movie" ? library.movies.find((m) => m.id === numericId) : undefined;
-    show = kind === "show" ? library.shows.find((s) => s.id === numericId) : undefined;
+    movie = kind === 'movie' ? library.movies.find((m) => m.id === numericId) : undefined;
+    show = kind === 'show' ? library.shows.find((s) => s.id === numericId) : undefined;
   }
 
   if (!movie && !show && !isTmdbOnly) {
@@ -72,7 +68,7 @@ export default function Detail() {
   }
 
   const item = (movie ?? show) as Movie | Show;
-  const backdrop = imageUrl(item.backdrop_path, "w780");
+  const backdrop = imageUrl(item.backdrop_path, 'w780');
   const title = item.title || item.parsed_title;
   const genres = parseGenres(item.genres);
   const inLibrary = !!movie || !!show;
@@ -102,7 +98,7 @@ export default function Detail() {
             {item.year && <span>{item.year}</span>}
             {item.rating != null && <span>★ {item.rating.toFixed(1)}</span>}
             {movie?.runtime && <span>{movie.runtime} min</span>}
-            {genres.length > 0 && <span>{genres.join(" · ")}</span>}
+            {genres.length > 0 && <span>{genres.join(' · ')}</span>}
           </div>
           {item.overview && <p className="detail-overview">{item.overview}</p>}
 
@@ -121,7 +117,7 @@ export default function Detail() {
               </button>
             )}
             <button
-              className={`btn btn-thumb ${rating === 1 ? "active" : ""}`}
+              className={`btn btn-thumb ${rating === 1 ? 'active' : ''}`}
               title="I like this"
               aria-pressed={rating === 1}
               onClick={() => sendRating(1)}
@@ -129,7 +125,7 @@ export default function Detail() {
               👍
             </button>
             <button
-              className={`btn btn-thumb ${rating === -1 ? "active" : ""}`}
+              className={`btn btn-thumb ${rating === -1 ? 'active' : ''}`}
               title="Not for me"
               aria-pressed={rating === -1}
               onClick={() => sendRating(-1)}
@@ -148,7 +144,8 @@ export default function Detail() {
               key={ep.id}
               className="episode-row"
               onClick={() =>
-                ep.media_file_id != null && navigate(`/watch/${ep.media_file_id}`, {
+                ep.media_file_id != null &&
+                navigate(`/watch/${ep.media_file_id}`, {
                   state: {
                     title,
                     subtitle: `S${ep.season}E${ep.episode} · ${ep.title || `Episode ${ep.episode}`}`,
@@ -159,9 +156,7 @@ export default function Detail() {
               <span className="episode-num">
                 S{ep.season}E{ep.episode}
               </span>
-              <span className="episode-title">
-                {ep.title || `Episode ${ep.episode}`}
-              </span>
+              <span className="episode-title">{ep.title || `Episode ${ep.episode}`}</span>
               <span className="episode-play">►</span>
             </button>
           ))}

@@ -1,9 +1,9 @@
 // Full-screen playback page. Resolves the media file id from the route and the active
 // profile from context, then hands off to VideoPlayer.
 
-import { useParams, useLocation } from "react-router-dom";
-import VideoPlayer from "../components/VideoPlayer";
-import { useProfile } from "../profile";
+import { useParams, useLocation } from 'react-router-dom';
+import VideoPlayer from '../components/VideoPlayer';
+import { useProfile } from '../profile';
 
 interface LocationState {
   title?: string;
