@@ -121,7 +121,7 @@ def _patched_getaddrinfo(host, *args, **kwargs):  # type: ignore[no-untyped-def]
 
     `host` may arrive as bytes (anyio/httpx do this), so normalize before matching.
     """
-    name = host.decode() if isinstance(host, (bytes, bytearray)) else host
+    name = host.decode() if isinstance(host, bytes | bytearray) else host
     if name in _TMDB_HOSTS:
         try:
             ip = _doh_resolve_sync(name)
