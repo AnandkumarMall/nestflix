@@ -17,8 +17,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator, TypedDict
+from typing import TypedDict
 
 from fastapi import HTTPException
 from fastapi.responses import Response, StreamingResponse
@@ -32,6 +33,7 @@ class SubtitleTrackDict(TypedDict):
     label: str
     language: str | None
     kind: str
+
 
 logger = logging.getLogger(__name__)
 
@@ -94,9 +96,7 @@ def range_response(path: Path, range_header: str | None, container: str) -> Resp
             end = file_size - 1
         end = min(end, file_size - 1)
         if start > end or start >= file_size:
-            return Response(
-                status_code=416, headers={"Content-Range": f"bytes */{file_size}"}
-            )
+            return Response(status_code=416, headers={"Content-Range": f"bytes */{file_size}"})
         status = 206
         headers["Content-Range"] = f"bytes {start}-{end}/{file_size}"
 
@@ -164,7 +164,7 @@ async def ffmpeg_stream(path: Path, mode: str, start_seconds: float) -> Streamin
         *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL
     )
 
-    async def pump() -> "asyncio.AsyncIterator[bytes]":
+    async def pump() -> asyncio.AsyncIterator[bytes]:
         try:
             assert proc.stdout is not None
             while True:

@@ -1,11 +1,11 @@
 // Per-profile viewing stats: totals, thumbs, top genres, and recent finishes.
 // All data comes from /api/stats (no charting library — bars are plain CSS widths).
 
-import { useEffect, useState } from "react";
-import { api, type Stats } from "../api/client";
-import { useProfile } from "../profile";
-import PosterRow from "../components/PosterRow";
-import PosterCard from "../components/PosterCard";
+import { useEffect, useState } from 'react';
+import { api, type Stats } from '../api/client';
+import { useProfile } from '../profile';
+import PosterRow from '../components/PosterRow';
+import PosterCard from '../components/PosterCard';
 
 export default function StatsPage() {
   const { activeProfile } = useProfile();
@@ -27,7 +27,7 @@ export default function StatsPage() {
 
   return (
     <div className="stats">
-      <h1 className="stats-heading">{activeProfile.name}'s viewing</h1>
+      <h1 className="stats-heading">{activeProfile.name}&apos;s viewing</h1>
 
       <div className="stat-cards">
         <div className="stat-card">
@@ -80,9 +80,7 @@ export default function StatsPage() {
       )}
 
       {stats.titles_finished === 0 && (
-        <div className="page-loading">
-          Finish something to start building your stats.
-        </div>
+        <div className="page-loading">Finish something to start building your stats.</div>
       )}
     </div>
   );

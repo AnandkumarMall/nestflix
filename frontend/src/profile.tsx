@@ -1,16 +1,10 @@
 // Active-profile context. Playback/progress calls are per-profile, so the chosen
 // profile id is kept here and persisted to localStorage across reloads.
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
-import { api, type Profile } from "./api/client";
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { api, type Profile } from './api/client';
 
-const STORAGE_KEY = "nestflix.profileId";
+const STORAGE_KEY = 'nestflix.profileId';
 
 interface ProfileContextValue {
   profiles: Profile[];
@@ -48,9 +42,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     (profiles.length === 1 ? profiles[0] : null);
 
   return (
-    <ProfileContext.Provider
-      value={{ profiles, activeProfile, setActiveProfile, loading }}
-    >
+    <ProfileContext.Provider value={{ profiles, activeProfile, setActiveProfile, loading }}>
       {children}
     </ProfileContext.Provider>
   );
@@ -58,6 +50,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
 export function useProfile(): ProfileContextValue {
   const ctx = useContext(ProfileContext);
-  if (!ctx) throw new Error("useProfile must be used within a ProfileProvider");
+  if (!ctx) throw new Error('useProfile must be used within a ProfileProvider');
   return ctx;
 }

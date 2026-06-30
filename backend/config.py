@@ -55,9 +55,7 @@ class Settings:
         self.port: int = int(os.getenv("PORT", "8000"))
 
         # Some ISPs DNS-poison TMDB; resolve its hostnames via Cloudflare DoH when set.
-        self.tmdb_use_doh: bool = os.getenv(
-            "TMDB_USE_DOH", "true"
-        ).strip().lower() not in (
+        self.tmdb_use_doh: bool = os.getenv("TMDB_USE_DOH", "true").strip().lower() not in (
             "0",
             "false",
             "no",
@@ -85,12 +83,8 @@ class Settings:
         # extract embedded subtitles. Absent → the app still streams natively-playable
         # files and surfaces a clear "needs ffmpeg" state for the rest. Paths may be
         # overridden via .env; otherwise we look them up on PATH.
-        self.ffmpeg_path: str = os.getenv("FFMPEG_PATH", "").strip() or _find_binary(
-            "ffmpeg"
-        )
-        self.ffprobe_path: str = os.getenv("FFPROBE_PATH", "").strip() or _find_binary(
-            "ffprobe"
-        )
+        self.ffmpeg_path: str = os.getenv("FFMPEG_PATH", "").strip() or _find_binary("ffmpeg")
+        self.ffprobe_path: str = os.getenv("FFPROBE_PATH", "").strip() or _find_binary("ffprobe")
         # x264 transcode quality/speed knobs (sane defaults; rarely changed).
         self.transcode_preset: str = os.getenv("TRANSCODE_PRESET", "veryfast").strip()
         self.transcode_crf: int = int(os.getenv("TRANSCODE_CRF", "23"))

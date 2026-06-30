@@ -174,9 +174,7 @@ async def enrich_library() -> dict:
     try:
         for row in db.get_pending_movies(conn):
             try:
-                ok = await enrich_movie(
-                    conn, row["id"], row["parsed_title"], row["year"]
-                )
+                ok = await enrich_movie(conn, row["id"], row["parsed_title"], row["year"])
                 counts["movies_matched" if ok else "movies_unmatched"] += 1
             except Exception as exc:
                 counts["errors"].append(f"movie {row['parsed_title']!r}: {exc}")
@@ -184,9 +182,7 @@ async def enrich_library() -> dict:
 
         for row in db.get_pending_shows(conn):
             try:
-                ok = await enrich_show(
-                    conn, row["id"], row["parsed_title"], row["year"]
-                )
+                ok = await enrich_show(conn, row["id"], row["parsed_title"], row["year"])
                 counts["shows_matched" if ok else "shows_unmatched"] += 1
             except Exception as exc:
                 counts["errors"].append(f"show {row['parsed_title']!r}: {exc}")

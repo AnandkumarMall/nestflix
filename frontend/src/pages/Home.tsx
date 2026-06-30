@@ -1,19 +1,19 @@
 // Netflix-style home: a hero plus rows for Continue Watching, the local library, and
 // TMDB discovery (trending / new releases).
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import {
   api,
   type ContinueItem,
   type DiscoverItem,
   type Library,
   type RecRow,
-} from "../api/client";
-import { useProfile } from "../profile";
-import { matchScore } from "../utils";
-import Hero from "../components/Hero";
-import PosterRow from "../components/PosterRow";
-import PosterCard from "../components/PosterCard";
+} from '../api/client';
+import { useProfile } from '../profile';
+import { matchScore } from '../utils';
+import Hero from '../components/Hero';
+import PosterRow from '../components/PosterRow';
+import PosterCard from '../components/PosterCard';
 
 export default function Home() {
   const { activeProfile } = useProfile();
@@ -29,8 +29,14 @@ export default function Home() {
       .library()
       .then(setLibrary)
       .catch((e) => setError(String(e)));
-    api.trending().then((r) => setTrending(r.items)).catch(() => undefined);
-    api.newReleases().then((r) => setNewReleases(r.items)).catch(() => undefined);
+    api
+      .trending()
+      .then((r) => setTrending(r.items))
+      .catch(() => undefined);
+    api
+      .newReleases()
+      .then((r) => setNewReleases(r.items))
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -45,11 +51,10 @@ export default function Home() {
       .catch(() => undefined);
   }, [activeProfile]);
 
-  if (error) return <div className="page-error">Couldn't load library: {error}</div>;
+  if (error) return <div className="page-error">Couldn&apos;t load library: {error}</div>;
   if (!library) return <div className="page-loading">Loading your library…</div>;
 
-  const heroMovie =
-    library.movies.find((m) => m.backdrop_path) ?? library.movies[0];
+  const heroMovie = library.movies.find((m) => m.backdrop_path) ?? library.movies[0];
 
   return (
     <div className="home">
@@ -62,17 +67,13 @@ export default function Home() {
               <PosterCard
                 key={c.media_file_id}
                 title={
-                  c.kind === "episode" && c.season != null
+                  c.kind === 'episode' && c.season != null
                     ? `${c.title} S${c.season}E${c.episode}`
                     : c.title
                 }
                 posterPath={c.poster_path}
                 to={`/watch/${c.media_file_id}`}
-                progress={
-                  c.duration_seconds > 0
-                    ? c.position_seconds / c.duration_seconds
-                    : 0
-                }
+                progress={c.duration_seconds > 0 ? c.position_seconds / c.duration_seconds : 0}
               />
             ))}
           </PosterRow>
@@ -100,11 +101,7 @@ export default function Home() {
                 title={m.title || m.parsed_title}
                 posterPath={m.poster_path}
                 to={`/title/movie/${m.id}`}
-                playTo={
-                  m.media_file_id != null
-                    ? `/watch/${m.media_file_id}`
-                    : undefined
-                }
+                playTo={m.media_file_id != null ? `/watch/${m.media_file_id}` : undefined}
                 subtitle={m.year ? String(m.year) : undefined}
                 match={matchScore(m.rating)}
                 runtime={m.runtime}
@@ -135,7 +132,7 @@ export default function Home() {
             {trending.map((d) => (
               <PosterCard
                 key={`tr-${d.id}`}
-                title={d.title || d.name || "Untitled"}
+                title={d.title || d.name || 'Untitled'}
                 posterPath={d.poster_path}
                 to="/"
                 subtitle={(d.release_date || d.first_air_date)?.slice(0, 4)}
@@ -149,7 +146,7 @@ export default function Home() {
             {newReleases.map((d) => (
               <PosterCard
                 key={`nr-${d.id}`}
-                title={d.title || d.name || "Untitled"}
+                title={d.title || d.name || 'Untitled'}
                 posterPath={d.poster_path}
                 to="/"
                 subtitle={(d.release_date || d.first_air_date)?.slice(0, 4)}

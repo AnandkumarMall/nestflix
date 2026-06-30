@@ -10,14 +10,9 @@
 // direct play and to a stream reload for the ffmpeg modes. The chrome (top bar, center
 // play, control bar, settings menus) mirrors the Netflix-style nestflix.html reference.
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  api,
-  streamUrl,
-  subtitleUrl,
-  type PlaybackInfo,
-} from "../api/client";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { api, streamUrl, subtitleUrl, type PlaybackInfo } from '../api/client';
 
 interface Props {
   mediaFileId: number;
@@ -32,23 +27,23 @@ interface ExtraTrack {
   src: string;
 }
 
-type SubtitlePosition = "bottom" | "center" | "top";
+type SubtitlePosition = 'bottom' | 'center' | 'top';
 
 const SAVE_INTERVAL_SECONDS = 10;
 const CONTROLS_HIDE_MS = 3000;
 
 function formatTime(seconds: number): string {
-  if (!isFinite(seconds) || seconds < 0) return "0:00";
+  if (!isFinite(seconds) || seconds < 0) return '0:00';
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = Math.floor(seconds % 60);
-  const mm = h > 0 ? String(m).padStart(2, "0") : String(m);
-  return `${h > 0 ? `${h}:` : ""}${mm}:${String(s).padStart(2, "0")}`;
+  const mm = h > 0 ? String(m).padStart(2, '0') : String(m);
+  return `${h > 0 ? `${h}:` : ''}${mm}:${String(s).padStart(2, '0')}`;
 }
 
 /** Human runtime, e.g. 134 min -> "2h 14m". */
 function formatRuntime(seconds: number): string {
-  if (!isFinite(seconds) || seconds <= 0) return "";
+  if (!isFinite(seconds) || seconds <= 0) return '';
   const h = Math.floor(seconds / 3600);
   const m = Math.round((seconds % 3600) / 60);
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
@@ -72,10 +67,9 @@ export default function VideoPlayer({
   const [position, setPosition] = useState(0); // absolute position (seconds)
   const [duration, setDuration] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [activeTextTrack, setActiveTextTrack] = useState<string>("off");
+  const [activeTextTrack, setActiveTextTrack] = useState<string>('off');
   const [extraTracks, setExtraTracks] = useState<ExtraTrack[]>([]);
-  const [subtitlePosition, setSubtitlePosition] =
-    useState<SubtitlePosition>("bottom");
+  const [subtitlePosition, setSubtitlePosition] = useState<SubtitlePosition>('bottom');
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [volume, setVolume] = useState(1); // 0..1
@@ -90,8 +84,7 @@ export default function VideoPlayer({
   const playAfterLoadRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const ffmpegMode =
-    info?.play_mode === "remux" || info?.play_mode === "transcode";
+  const ffmpegMode = info?.play_mode === 'remux' || info?.play_mode === 'transcode';
 
   // --- Load playback info + saved resume position -------------------------
   useEffect(() => {
@@ -114,13 +107,13 @@ export default function VideoPlayer({
         const resume = prog && !prog.completed ? prog.position_seconds : 0;
         resumeRef.current = resume;
 
-        if (pi.play_mode === "unavailable") {
+        if (pi.play_mode === 'unavailable') {
           setError(
             pi.ffmpeg_available
               ? "This file's format can't be played in the browser."
-              : "This file needs ffmpeg on the server to play. Install ffmpeg, then reload.",
+              : 'This file needs ffmpeg on the server to play. Install ffmpeg, then reload.'
           );
-        } else if (pi.play_mode === "remux" || pi.play_mode === "transcode") {
+        } else if (pi.play_mode === 'remux' || pi.play_mode === 'transcode') {
           // ffmpeg modes resume by starting the stream at the saved offset.
           setStreamStart(resume);
           setPosition(resume);
@@ -138,7 +131,7 @@ export default function VideoPlayer({
   // --- Progress persistence ----------------------------------------------
   const saveProgress = useCallback(
     (event?: string, beacon = false) => {
-      if (!info || info.play_mode === "unavailable") return;
+      if (!info || info.play_mode === 'unavailable') return;
       const body = {
         profile_id: profileId,
         media_file_id: mediaFileId,
@@ -146,26 +139,26 @@ export default function VideoPlayer({
         duration_seconds: duration || info.duration_seconds || 0,
         ...(event ? { event } : {}),
       };
-      if (beacon && typeof navigator.sendBeacon === "function") {
+      if (beacon && typeof navigator.sendBeacon === 'function') {
         api.saveProgressBeacon(body);
       } else {
         api.saveProgress(body).catch(() => undefined);
       }
     },
-    [info, profileId, mediaFileId, position, duration],
+    [info, profileId, mediaFileId, position, duration]
   );
 
   // Save on tab hide / unload so we don't lose the position.
   useEffect(() => {
     const onHide = () => saveProgress(undefined, true);
     const onVisibilityChange = () => {
-      if (document.visibilityState === "hidden") onHide();
+      if (document.visibilityState === 'hidden') onHide();
     };
-    document.addEventListener("visibilitychange", onVisibilityChange);
-    window.addEventListener("pagehide", onHide);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('pagehide', onHide);
     return () => {
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-      window.removeEventListener("pagehide", onHide);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('pagehide', onHide);
       saveProgress(); // save when navigating away from the player
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -192,8 +185,8 @@ export default function VideoPlayer({
 
   useEffect(() => {
     const onChange = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", onChange);
-    return () => document.removeEventListener("fullscreenchange", onChange);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
   }, []);
 
   // --- Auto-hiding controls ----------------------------------------------
@@ -242,7 +235,7 @@ export default function VideoPlayer({
   };
 
   const onEnded = () => {
-    saveProgress("finish");
+    saveProgress('finish');
     setPlaying(false);
   };
 
@@ -268,7 +261,7 @@ export default function VideoPlayer({
         v.currentTime = clamped;
       }
     },
-    [duration, ffmpegMode, playing],
+    [duration, ffmpegMode, playing]
   );
 
   // --- Subtitles ----------------------------------------------------------
@@ -276,7 +269,7 @@ export default function VideoPlayer({
   const applySubtitlePosition = (pos: SubtitlePosition) => {
     const tracks = videoRef.current?.textTracks;
     if (!tracks) return;
-    const line = pos === "top" ? 0 : pos === "center" ? 8 : undefined;
+    const line = pos === 'top' ? 0 : pos === 'center' ? 8 : undefined;
     for (let i = 0; i < tracks.length; i++) {
       const cues = tracks[i].cues;
       if (!cues) continue;
@@ -284,7 +277,7 @@ export default function VideoPlayer({
         const cue = cues[j] as VTTCue;
         if (line === undefined) {
           cue.snapToLines = true;
-          cue.line = "auto";
+          cue.line = 'auto';
         } else {
           cue.snapToLines = true;
           cue.line = line;
@@ -299,7 +292,7 @@ export default function VideoPlayer({
     const tracks = videoRef.current?.textTracks;
     if (!tracks) return;
     for (let i = 0; i < tracks.length; i++) {
-      tracks[i].mode = tracks[i].label === value ? "showing" : "disabled";
+      tracks[i].mode = tracks[i].label === value ? 'showing' : 'disabled';
     }
     applySubtitlePosition(subtitlePosition);
   };
@@ -312,11 +305,10 @@ export default function VideoPlayer({
   const addSubtitleFile = async (file: File) => {
     // Browsers only accept WebVTT for <track>, so convert .srt on the fly.
     let text = await file.text();
-    if (file.name.toLowerCase().endsWith(".srt")) {
-      text =
-        "WEBVTT\n\n" + text.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, "$1.$2");
+    if (file.name.toLowerCase().endsWith('.srt')) {
+      text = 'WEBVTT\n\n' + text.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
     }
-    const src = URL.createObjectURL(new Blob([text], { type: "text/vtt" }));
+    const src = URL.createObjectURL(new Blob([text], { type: 'text/vtt' }));
     setExtraTracks((prev) => [...prev, { label: file.name, src }]);
     // Auto-enable the freshly added track.
     setTimeout(() => selectTextTrack(file.name), 0);
@@ -328,44 +320,44 @@ export default function VideoPlayer({
       const v = videoRef.current;
       if (!v) return;
       switch (e.code) {
-        case "Space":
-        case "KeyK":
+        case 'Space':
+        case 'KeyK':
           e.preventDefault();
           togglePlay();
           break;
-        case "ArrowRight":
+        case 'ArrowRight':
           seekTo(position + 5);
           revealControls();
           break;
-        case "ArrowLeft":
+        case 'ArrowLeft':
           seekTo(position - 5);
           revealControls();
           break;
-        case "ArrowUp":
+        case 'ArrowUp':
           e.preventDefault();
           setVolume((vol) => Math.min(1, +(vol + 0.1).toFixed(2)));
           setMuted(false);
           revealControls();
           break;
-        case "ArrowDown":
+        case 'ArrowDown':
           e.preventDefault();
           setVolume((vol) => Math.max(0, +(vol - 0.1).toFixed(2)));
           revealControls();
           break;
-        case "KeyF":
+        case 'KeyF':
           toggleFullscreen();
           break;
-        case "KeyM":
+        case 'KeyM':
           setMuted((m) => !m);
           revealControls();
           break;
-        case "Escape":
+        case 'Escape':
           if (!document.fullscreenElement) navigate(-1);
           break;
       }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [position, togglePlay, seekTo, toggleFullscreen, revealControls, navigate]);
 
   if (error) {
@@ -374,8 +366,7 @@ export default function VideoPlayer({
         <p>{error}</p>
         {info && (
           <p className="player-error-detail">
-            {info.container?.toUpperCase()} · {info.video_codec ?? "?"} /{" "}
-            {info.audio_codec ?? "?"}
+            {info.container?.toUpperCase()} · {info.video_codec ?? '?'} / {info.audio_codec ?? '?'}
           </p>
         )}
       </div>
@@ -389,24 +380,20 @@ export default function VideoPlayer({
   const hasAnySubtitle = subtitleTracks.length > 0 || extraTracks.length > 0;
 
   // Prefer backend display metadata; fall back to props passed via route state.
-  const displayTitle = info.title || fallbackTitle || "Now Playing";
+  const displayTitle = info.title || fallbackTitle || 'Now Playing';
   const displaySubtitle =
-    info.kind === "episode" && info.season != null
-      ? `S${info.season}:E${info.episode}${
-          info.episode_title ? ` "${info.episode_title}"` : ""
-        }`
+    info.kind === 'episode' && info.season != null
+      ? `S${info.season}:E${info.episode}${info.episode_title ? ` "${info.episode_title}"` : ''}`
       : fallbackSubtitle ||
-        [info.year ? String(info.year) : null, formatRuntime(duration)]
-          .filter(Boolean)
-          .join(" · ");
+        [info.year ? String(info.year) : null, formatRuntime(duration)].filter(Boolean).join(' · ');
 
   const progressPct = duration > 0 ? (position / duration) * 100 : 0;
 
   return (
     <div
       ref={containerRef}
-      className={`player ${isFullscreen ? "is-fullscreen" : ""} ${
-        controlsVisible ? "controls-on" : "controls-off"
+      className={`player ${isFullscreen ? 'is-fullscreen' : ''} ${
+        controlsVisible ? 'controls-on' : 'controls-off'
       }`}
       onMouseMove={revealControls}
       onMouseLeave={() => playing && setControlsVisible(false)}
@@ -443,7 +430,7 @@ export default function VideoPlayer({
               key={t.track}
               kind="subtitles"
               label={t.label}
-              srcLang={t.language ?? "und"}
+              srcLang={t.language ?? 'und'}
               src={subtitleUrl(mediaFileId, t.track)}
             />
           ))}
@@ -469,24 +456,18 @@ export default function VideoPlayer({
       </div>
 
       {/* Top overlay: back + title/subtitle */}
-      <div className={`player-top ${controlsVisible ? "visible" : ""}`}>
-        <button
-          className="player-back"
-          onClick={() => navigate(-1)}
-          aria-label="Back"
-        >
+      <div className={`player-top ${controlsVisible ? 'visible' : ''}`}>
+        <button className="player-back" onClick={() => navigate(-1)} aria-label="Back">
           ←
         </button>
         <div>
           <div className="player-title">{displayTitle}</div>
-          {displaySubtitle && (
-            <div className="player-subtitle">{displaySubtitle}</div>
-          )}
+          {displaySubtitle && <div className="player-subtitle">{displaySubtitle}</div>}
         </div>
       </div>
 
       {/* Control bar */}
-      <div className={`controls ${controlsVisible ? "visible" : ""}`}>
+      <div className={`controls ${controlsVisible ? 'visible' : ''}`}>
         <div
           className="progress-area"
           onClick={(e) => {
@@ -512,7 +493,7 @@ export default function VideoPlayer({
 
         <div className="controls-row">
           <div className="controls-left">
-            <button className="ctrl-btn" onClick={togglePlay} title={playing ? "Pause" : "Play"}>
+            <button className="ctrl-btn" onClick={togglePlay} title={playing ? 'Pause' : 'Play'}>
               {playing ? (
                 <svg viewBox="0 0 24 24" fill="white">
                   <path d="M6 4h4v16H6zm8 0h4v16h-4z" />
@@ -524,21 +505,13 @@ export default function VideoPlayer({
               )}
             </button>
 
-            <button
-              className="ctrl-btn"
-              onClick={() => seekTo(position - 10)}
-              title="Back 10s"
-            >
+            <button className="ctrl-btn" onClick={() => seekTo(position - 10)} title="Back 10s">
               <svg viewBox="0 0 24 24" fill="white">
                 <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z" />
               </svg>
             </button>
 
-            <button
-              className="ctrl-btn"
-              onClick={() => seekTo(position + 10)}
-              title="Forward 10s"
-            >
+            <button className="ctrl-btn" onClick={() => seekTo(position + 10)} title="Forward 10s">
               <svg viewBox="0 0 24 24" fill="white">
                 <path d="M13 6v12l8.5-6L13 6zm-.5 6L4 6v12l8.5-6z" />
               </svg>
@@ -548,7 +521,7 @@ export default function VideoPlayer({
               <button
                 className="ctrl-btn"
                 onClick={() => setMuted((m) => !m)}
-                title={muted ? "Unmute" : "Mute"}
+                title={muted ? 'Unmute' : 'Mute'}
               >
                 {muted || volume === 0 ? (
                   <svg viewBox="0 0 24 24" fill="white">
@@ -583,7 +556,7 @@ export default function VideoPlayer({
             {/* Subtitles / captions */}
             <div className="settings-anchor">
               <button
-                className={`ctrl-btn ${activeTextTrack !== "off" ? "active" : ""}`}
+                className={`ctrl-btn ${activeTextTrack !== 'off' ? 'active' : ''}`}
                 onClick={() => setSubtitleMenuOpen((o) => !o)}
                 title="Subtitles & captions"
               >
@@ -596,10 +569,10 @@ export default function VideoPlayer({
                 <div className="settings-menu show">
                   <div className="settings-label">Subtitles</div>
                   <div
-                    className={`settings-item ${activeTextTrack === "off" ? "active" : ""}`}
-                    onClick={() => selectTextTrack("off")}
+                    className={`settings-item ${activeTextTrack === 'off' ? 'active' : ''}`}
+                    onClick={() => selectTextTrack('off')}
                   >
-                    Off {activeTextTrack === "off" && <span>✓</span>}
+                    Off {activeTextTrack === 'off' && <span>✓</span>}
                   </div>
 
                   {hasAnySubtitle && <div className="settings-divider" />}
@@ -607,7 +580,7 @@ export default function VideoPlayer({
                   {subtitleTracks.map((t) => (
                     <div
                       key={t.track}
-                      className={`settings-item ${activeTextTrack === t.label ? "active" : ""}`}
+                      className={`settings-item ${activeTextTrack === t.label ? 'active' : ''}`}
                       onClick={() => selectTextTrack(t.label)}
                     >
                       {t.label} {activeTextTrack === t.label && <span>✓</span>}
@@ -616,7 +589,7 @@ export default function VideoPlayer({
                   {extraTracks.map((t) => (
                     <div
                       key={t.src}
-                      className={`settings-item ${activeTextTrack === t.label ? "active" : ""}`}
+                      className={`settings-item ${activeTextTrack === t.label ? 'active' : ''}`}
                       onClick={() => selectTextTrack(t.label)}
                     >
                       {t.label} {activeTextTrack === t.label && <span>✓</span>}
@@ -625,24 +598,19 @@ export default function VideoPlayer({
 
                   <div className="settings-divider" />
                   <div className="settings-label">Position</div>
-                  {(["bottom", "center", "top"] as SubtitlePosition[]).map((pos) => (
+                  {(['bottom', 'center', 'top'] as SubtitlePosition[]).map((pos) => (
                     <div
                       key={pos}
-                      className={`settings-item ${subtitlePosition === pos ? "active" : ""}`}
+                      className={`settings-item ${subtitlePosition === pos ? 'active' : ''}`}
                       onClick={() => changeSubtitlePosition(pos)}
                     >
-                      {pos === "bottom"
-                        ? "Bottom (Default)"
-                        : pos[0].toUpperCase() + pos.slice(1)}
+                      {pos === 'bottom' ? 'Bottom (Default)' : pos[0].toUpperCase() + pos.slice(1)}
                       {subtitlePosition === pos && <span>✓</span>}
                     </div>
                   ))}
 
                   <div className="settings-divider" />
-                  <div
-                    className="settings-item"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
+                  <div className="settings-item" onClick={() => fileInputRef.current?.click()}>
                     ＋ Add subtitle file…
                   </div>
                 </div>
@@ -658,7 +626,7 @@ export default function VideoPlayer({
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) addSubtitleFile(f);
-                e.target.value = "";
+                e.target.value = '';
               }}
             />
 
@@ -666,7 +634,7 @@ export default function VideoPlayer({
             <button
               className="ctrl-btn"
               onClick={toggleFullscreen}
-              title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+              title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
             >
               {isFullscreen ? (
                 <svg viewBox="0 0 24 24" fill="white">
@@ -684,8 +652,8 @@ export default function VideoPlayer({
 
       {ffmpegMode && (
         <p className="player-mode-note">
-          {info.play_mode === "transcode" ? "Transcoding" : "Remuxing"} ·{" "}
-          {info.video_codec} {info.width ? `${info.width}×${info.height}` : ""}
+          {info.play_mode === 'transcode' ? 'Transcoding' : 'Remuxing'} · {info.video_codec}{' '}
+          {info.width ? `${info.width}×${info.height}` : ''}
         </p>
       )}
     </div>

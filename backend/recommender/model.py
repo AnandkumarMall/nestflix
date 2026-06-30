@@ -23,7 +23,7 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 
 from ..config import settings
-from .features import Vocabulary, feature_matrix, feature_vector
+from .features import Vocabulary, feature_matrix
 
 
 @dataclass

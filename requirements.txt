@@ -6,6 +6,7 @@ scikit-learn==1.6.1
 numpy==2.2.1
 python-dotenv==1.0.1
 pytest==8.3.5
+ruff==0.6.8
 
 # System dependency (NOT pip): ffmpeg + ffprobe enable remux/transcode of containers and
 # codecs browsers can't play natively (mkv, HEVC, AC3) and embedded-subtitle extraction.

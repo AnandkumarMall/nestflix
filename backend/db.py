@@ -91,9 +91,7 @@ def upsert_movie(
         """,
         (media_file_id, parsed_title, year),
     )
-    row = conn.execute(
-        "SELECT id FROM movies WHERE media_file_id = ?", (media_file_id,)
-    ).fetchone()
+    row = conn.execute("SELECT id FROM movies WHERE media_file_id = ?", (media_file_id,)).fetchone()
     return row["id"]
 
 
@@ -103,9 +101,7 @@ def upsert_show(conn: sqlite3.Connection, parsed_title: str) -> int:
         "INSERT INTO shows (parsed_title) VALUES (?) ON CONFLICT(parsed_title) DO NOTHING",
         (parsed_title,),
     )
-    row = conn.execute(
-        "SELECT id FROM shows WHERE parsed_title = ?", (parsed_title,)
-    ).fetchone()
+    row = conn.execute("SELECT id FROM shows WHERE parsed_title = ?", (parsed_title,)).fetchone()
     return row["id"]
 
 
@@ -137,14 +133,17 @@ def get_library() -> dict:
     """Return all movies and shows (with episodes grouped by season) as plain dicts."""
     conn = get_db()
     try:
-        movies = [dict(r) for r in conn.execute("""
+        movies = [
+            dict(r)
+            for r in conn.execute("""
                 SELECT m.id, m.tmdb_id, m.parsed_title, m.title, m.year, m.overview,
                        m.poster_path, m.backdrop_path, m.rating, m.runtime, m.genres,
                        m.match_status, f.id AS media_file_id, f.path, f.container
                 FROM movies m
                 JOIN media_files f ON f.id = m.media_file_id
                 ORDER BY COALESCE(m.title, m.parsed_title)
-                """).fetchall()]
+                """).fetchall()
+        ]
 
         shows = []
         for show in conn.execute("""
@@ -321,9 +320,7 @@ def update_show_metadata(conn: sqlite3.Connection, show_id: int, meta: dict) -> 
 
 def mark_movie_unmatched(conn: sqlite3.Connection, movie_id: int) -> None:
     """Flag a movie as having no TMDB match (kept browsable, fixable later)."""
-    conn.execute(
-        "UPDATE movies SET match_status = 'unmatched' WHERE id = ?", (movie_id,)
-    )
+    conn.execute("UPDATE movies SET match_status = 'unmatched' WHERE id = ?", (movie_id,))
 
 
 def mark_show_unmatched(conn: sqlite3.Connection, show_id: int) -> None:
@@ -628,9 +625,7 @@ def get_finished_media_ids(conn: sqlite3.Connection, profile_id: int) -> set[int
     return {r["media_file_id"] for r in rows}
 
 
-def get_ratings(
-    conn: sqlite3.Connection, profile_id: int
-) -> dict[tuple[str, int], int]:
+def get_ratings(conn: sqlite3.Connection, profile_id: int) -> dict[tuple[str, int], int]:
     """Explicit thumbs signals keyed by ('movie'|'show', id) → value (+1 / -1)."""
     rows = conn.execute(
         "SELECT movie_id, show_id, value FROM ratings WHERE profile_id = ?",
@@ -689,8 +684,7 @@ def get_profile_stats(
         (profile_id,),
     ).fetchone()["n"]
     seconds = conn.execute(
-        "SELECT COALESCE(SUM(position_seconds), 0) AS s "
-        "FROM watch_progress WHERE profile_id = ?",
+        "SELECT COALESCE(SUM(position_seconds), 0) AS s FROM watch_progress WHERE profile_id = ?",
         (profile_id,),
     ).fetchone()["s"]
     rating_row = conn.execute(
