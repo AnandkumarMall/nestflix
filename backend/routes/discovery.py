@@ -36,3 +36,25 @@ async def new_releases() -> dict:
         return {"items": await tmdb.now_playing()}
     except tmdb.TMDBError as exc:
         raise HTTPException(status_code=502, detail=f"TMDB error: {exc}") from exc
+
+
+@router.get("/movie/{tmdb_id}")
+async def movie_detail(tmdb_id: int) -> dict:
+    """Fetch full TMDB details for a movie by ID (description, cast, keywords, etc.)."""
+    if not settings.tmdb_configured:
+        raise HTTPException(status_code=400, detail="TMDB is not configured")
+    try:
+        return await tmdb.movie_details(tmdb_id)
+    except tmdb.TMDBError as exc:
+        raise HTTPException(status_code=502, detail=f"TMDB error: {exc}") from exc
+
+
+@router.get("/tv/{tmdb_id}")
+async def tv_detail(tmdb_id: int) -> dict:
+    """Fetch full TMDB details for a TV show by ID (description, cast, keywords, etc.)."""
+    if not settings.tmdb_configured:
+        raise HTTPException(status_code=400, detail="TMDB is not configured")
+    try:
+        return await tmdb.tv_details(tmdb_id)
+    except tmdb.TMDBError as exc:
+        raise HTTPException(status_code=502, detail=f"TMDB error: {exc}") from exc

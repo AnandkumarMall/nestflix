@@ -23,6 +23,7 @@ export default function App() {
             <Route path="/search" element={<Search />} />
             <Route path="/stats" element={<Stats />} />
             <Route path="/title/:kind/:id" element={<Detail />} />
+            <Route path="/title/:kind/:id/:source" element={<Detail />} />
             <Route path="/watch/:mediaFileId" element={<Player />} />
           </Routes>
         </main>

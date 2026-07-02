@@ -218,6 +218,8 @@ export const api = {
   library: () => get<Library>('/library'),
   trending: () => get<{ items: DiscoverItem[] }>('/discovery/trending'),
   newReleases: () => get<{ items: DiscoverItem[] }>('/discovery/new-releases'),
+  tmdbMovie: (id: number) => get('/discovery/movie/' + id),
+  tmdbTv: (id: number) => get('/discovery/tv/' + id),
 
   searchLibrary: (q: string) =>
     get<{ query: string; results: SearchResult[] }>(`/library/search?q=${encodeURIComponent(q)}`),

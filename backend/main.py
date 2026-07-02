@@ -18,6 +18,8 @@ from fastapi.staticfiles import StaticFiles
 from . import tmdb
 from .config import settings
 from .db import init_db
+from .scanner import scan_library
+from .enrich import enrich_library
 from .routes import (
     discovery,
     images,
@@ -33,6 +35,18 @@ from .routes import (
 async def lifespan(app: FastAPI):
     # Ensure the database exists and is migrated before serving requests.
     init_db()
+    # Scan the library for any new files on startup (idempotent: won't duplicate).
+    result = scan_library()
+    if result.movies_added or result.episodes_added:
+        print(f"Startup scan: {result.movies_added} movies, {result.episodes_added} episodes added")
+    # Enrich unmatched items with TMDB metadata + posters on startup (idempotent).
+    if settings.tmdb_configured:
+        try:
+            enrich_result = await enrich_library()
+            if enrich_result.get("matched") or enrich_result.get("unmatched"):
+                print(f"Startup enrich: {enrich_result.get('matched', 0)} matched, {enrich_result.get('unmatched', 0)} unmatched")
+        except Exception as exc:
+            print(f"Startup enrich failed (will retry on manual scan): {exc}")
     yield
     # Release the shared TMDB HTTP client on shutdown.
     await tmdb.aclose()

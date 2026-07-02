@@ -17,12 +17,14 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+import subprocess
 from collections.abc import Iterator
 from pathlib import Path
 from typing import TypedDict
 
 from fastapi import HTTPException
 from fastapi.responses import Response, StreamingResponse
+from starlette.concurrency import run_in_threadpool
 
 from .config import settings
 from .media_probe import MediaInfo
@@ -160,26 +162,31 @@ async def ffmpeg_stream(path: Path, mode: str, start_seconds: float) -> Streamin
         raise HTTPException(status_code=409, detail="ffmpeg is not installed")
 
     cmd = _ffmpeg_cmd(path, mode, start_seconds)
-    proc = await asyncio.create_subprocess_exec(
-        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL
+    # Use subprocess.Popen in a thread (works on Windows; asyncio subprocess doesn't).
+    proc = await run_in_threadpool(
+        subprocess.Popen,
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0,
     )
 
-    async def pump() -> asyncio.AsyncIterator[bytes]:
+    def pump() -> Iterator[bytes]:
         try:
             assert proc.stdout is not None
             while True:
-                chunk = await proc.stdout.read(_CHUNK)
+                chunk = proc.stdout.read(_CHUNK)
                 if not chunk:
                     break
                 yield chunk
         finally:
             # Client closed the tab / seeked away — don't leave ffmpeg encoding forever.
-            if proc.returncode is None:
+            if proc.poll() is None:
                 try:
                     proc.kill()
-                except ProcessLookupError:
+                    proc.wait(timeout=5)
+                except (ProcessLookupError, subprocess.TimeoutExpired):
                     pass
-                await proc.wait()
 
     headers = {"Cache-Control": "no-store", "Accept-Ranges": "none"}
     return StreamingResponse(pump(), media_type="video/mp4", headers=headers)

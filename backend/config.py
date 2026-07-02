@@ -85,9 +85,10 @@ class Settings:
         # overridden via .env; otherwise we look them up on PATH.
         self.ffmpeg_path: str = os.getenv("FFMPEG_PATH", "").strip() or _find_binary("ffmpeg")
         self.ffprobe_path: str = os.getenv("FFPROBE_PATH", "").strip() or _find_binary("ffprobe")
-        # x264 transcode quality/speed knobs (sane defaults; rarely changed).
-        self.transcode_preset: str = os.getenv("TRANSCODE_PRESET", "veryfast").strip()
-        self.transcode_crf: int = int(os.getenv("TRANSCODE_CRF", "23"))
+        # x264 transcode quality/speed knobs. Defaults: fast preset for good quality at
+        # reasonable speed; CRF 21 for 1080p/4K quality. Override via .env if needed.
+        self.transcode_preset: str = os.getenv("TRANSCODE_PRESET", "fast").strip()
+        self.transcode_crf: int = int(os.getenv("TRANSCODE_CRF", "21"))
 
     @property
     def tmdb_configured(self) -> bool:
