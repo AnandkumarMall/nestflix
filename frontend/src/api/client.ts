@@ -98,6 +98,7 @@ export interface DiscoverItem {
   vote_average?: number;
   release_date?: string;
   first_air_date?: string;
+  media_type?: string;
 }
 
 export type PlayMode = 'direct' | 'remux' | 'transcode' | 'unavailable';
