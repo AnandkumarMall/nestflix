@@ -81,14 +81,16 @@ export default function Detail() {
     return <div className="page-loading">Loading…</div>;
   }
 
-  const item = (movie ?? show ?? tmdbItem) as Movie | Show | Record<string, unknown>;
-  const backdrop = imageUrl(
-    (item as any)?.backdrop_path as string | null | undefined,
-    'w780'
-  );
-  const title = (item as any)?.title || (item as any)?.parsed_title || (item as any)?.name;
-  const genres = parseGenres((item as any)?.genres || []);
+  const item = movie ?? show ?? tmdbItem;
+  const isProp = (obj: unknown, key: string): unknown => (typeof obj === 'object' && obj ? (obj as Record<string, unknown>)[key] : undefined);
+  const backdrop = imageUrl(isProp(item, 'backdrop_path') as string | undefined, 'w780');
+  const title = (isProp(item, 'title') || isProp(item, 'parsed_title') || isProp(item, 'name')) as string | undefined;
+  const genres = parseGenres((isProp(item, 'genres') as Record<string, string>[] | undefined) || []);
   const inLibrary = !!movie || !!show;
+  const year = isProp(item, 'year') || (isProp(item, 'release_date') as string | undefined)?.slice(0, 4) || (isProp(item, 'first_air_date') as string | undefined)?.slice(0, 4);
+  const rating = isProp(item, 'vote_average') ?? isProp(item, 'rating');
+  const runtime = isProp(item, 'runtime') || movie?.runtime;
+  const overview = (isProp(item, 'overview') || isProp(item, 'description')) as string | undefined;
 
   function sendRating(value: 1 | -1) {
     if (!activeProfile) return;
@@ -112,22 +114,12 @@ export default function Detail() {
         <div className="detail-overlay">
           <h1>{title}</h1>
           <div className="detail-meta">
-            {((item as any)?.year || (item as any)?.release_date?.slice(0, 4) || (item as any)?.first_air_date?.slice(0, 4)) && (
-              <span>{(item as any)?.year || (item as any)?.release_date?.slice(0, 4) || (item as any)?.first_air_date?.slice(0, 4)}</span>
-            )}
-            {(item as any)?.vote_average != null && (
-              <span>★ {Number((item as any).vote_average).toFixed(1)}</span>
-            )}
-            {(item as any)?.rating != null && (
-              <span>★ {Number((item as any).rating).toFixed(1)}</span>
-            )}
-            {movie?.runtime && <span>{movie.runtime} min</span>}
-            {(item as any)?.runtime && <span>{(item as any).runtime} min</span>}
+            {year && <span>{year}</span>}
+            {rating != null && <span>★ {Number(rating).toFixed(1)}</span>}
+            {runtime && <span>{runtime} min</span>}
             {genres.length > 0 && <span>{genres.join(' · ')}</span>}
           </div>
-          {((item as any)?.overview || (item as any)?.description) && (
-            <p className="detail-overview">{(item as any)?.overview || (item as any)?.description}</p>
-          )}
+          {overview && <p className="detail-overview">{overview}</p>}
 
           <div className="detail-actions">
             {inLibrary && movie && movie.media_file_id != null && (
