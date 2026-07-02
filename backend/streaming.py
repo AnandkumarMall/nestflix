@@ -14,7 +14,6 @@ process is always terminated when the client disconnects to avoid orphaned encod
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import re
 import subprocess
