@@ -82,15 +82,21 @@ export default function Detail() {
   }
 
   const item = movie ?? show ?? tmdbItem;
-  const isProp = (obj: unknown, key: string): unknown => (typeof obj === 'object' && obj ? (obj as Record<string, unknown>)[key] : undefined);
-  const backdrop = imageUrl(isProp(item, 'backdrop_path') as string | undefined, 'w780');
-  const title = (isProp(item, 'title') || isProp(item, 'parsed_title') || isProp(item, 'name')) as string | undefined;
-  const genres = parseGenres((isProp(item, 'genres') as Record<string, string>[] | undefined) || []);
   const inLibrary = !!movie || !!show;
-  const year = isProp(item, 'year') || (isProp(item, 'release_date') as string | undefined)?.slice(0, 4) || (isProp(item, 'first_air_date') as string | undefined)?.slice(0, 4);
-  const rating = isProp(item, 'vote_average') ?? isProp(item, 'rating');
-  const runtime = isProp(item, 'runtime') || movie?.runtime;
-  const overview = (isProp(item, 'overview') || isProp(item, 'description')) as string | undefined;
+
+  // Safe property access for mixed types (Movie | Show | TMDB item)
+  const getProp = (key: string): unknown => {
+    if (!item || typeof item !== 'object') return undefined;
+    return (item as Record<string, unknown>)[key];
+  };
+
+  const backdrop = imageUrl(getProp('backdrop_path') as string | undefined, 'w780');
+  const title = (getProp('title') ?? getProp('parsed_title') ?? getProp('name')) as string | undefined;
+  const genres = parseGenres((getProp('genres') as Record<string, string>[] | undefined) ?? []);
+  const year = getProp('year') ?? (getProp('release_date') as string | undefined)?.slice(0, 4) ?? (getProp('first_air_date') as string | undefined)?.slice(0, 4);
+  const rating = getProp('vote_average') ?? getProp('rating');
+  const runtime = getProp('runtime') ?? movie?.runtime;
+  const overview = (getProp('overview') ?? getProp('description')) as string | undefined;
 
   function sendRating(value: 1 | -1) {
     if (!activeProfile) return;
