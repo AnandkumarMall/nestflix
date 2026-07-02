@@ -90,13 +90,27 @@ export default function Detail() {
     return (item as Record<string, unknown>)[key];
   };
 
-  const backdrop = imageUrl(getProp('backdrop_path') as string | undefined, 'w780');
-  const title = (getProp('title') ?? getProp('parsed_title') ?? getProp('name')) as string | undefined;
-  const genres = parseGenres((getProp('genres') as Record<string, string>[] | undefined) ?? []);
-  const year = getProp('year') ?? (getProp('release_date') as string | undefined)?.slice(0, 4) ?? (getProp('first_air_date') as string | undefined)?.slice(0, 4);
+  const backdrop = imageUrl(
+    getProp('backdrop_path') as string | undefined,
+    'w780'
+  );
+  const title = (
+    getProp('title') ??
+    getProp('parsed_title') ??
+    getProp('name')
+  ) as string | undefined;
+  const genres = parseGenres(
+    (getProp('genres') as Record<string, string>[] | undefined) ?? []
+  );
+  const year =
+    getProp('year') ??
+    (getProp('release_date') as string | undefined)?.slice(0, 4) ??
+    (getProp('first_air_date') as string | undefined)?.slice(0, 4);
   const rating = getProp('vote_average') ?? getProp('rating');
   const runtime = getProp('runtime') ?? movie?.runtime;
-  const overview = (getProp('overview') ?? getProp('description')) as string | undefined;
+  const overview = (
+    getProp('overview') ?? getProp('description')
+  ) as string | undefined;
 
   function sendRating(value: 1 | -1) {
     if (!activeProfile) return;

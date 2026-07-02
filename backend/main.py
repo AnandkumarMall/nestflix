@@ -18,8 +18,8 @@ from fastapi.staticfiles import StaticFiles
 from . import tmdb
 from .config import settings
 from .db import init_db
-from .scanner import scan_library
 from .enrich import enrich_library
+from .scanner import scan_library
 from .routes import (
     discovery,
     images,
