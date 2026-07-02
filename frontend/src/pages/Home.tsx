@@ -129,29 +129,35 @@ export default function Home() {
 
         {trending.length > 0 && (
           <PosterRow title="Trending on TMDB">
-            {trending.map((d) => (
-              <PosterCard
-                key={`tr-${d.id}`}
-                title={d.title || d.name || 'Untitled'}
-                posterPath={d.poster_path}
-                to="/"
-                subtitle={(d.release_date || d.first_air_date)?.slice(0, 4)}
-              />
-            ))}
+            {trending.map((d) => {
+              const kind = d.media_type || 'movie';
+              return (
+                <PosterCard
+                  key={`tr-${d.id}`}
+                  title={d.title || d.name || 'Untitled'}
+                  posterPath={d.poster_path}
+                  to={`/title/${kind}/${d.id}/tmdb`}
+                  subtitle={(d.release_date || d.first_air_date)?.slice(0, 4)}
+                />
+              );
+            })}
           </PosterRow>
         )}
 
         {newReleases.length > 0 && (
           <PosterRow title="New Releases">
-            {newReleases.map((d) => (
-              <PosterCard
-                key={`nr-${d.id}`}
-                title={d.title || d.name || 'Untitled'}
-                posterPath={d.poster_path}
-                to="/"
-                subtitle={(d.release_date || d.first_air_date)?.slice(0, 4)}
-              />
-            ))}
+            {newReleases.map((d) => {
+              const kind = d.media_type || 'movie';
+              return (
+                <PosterCard
+                  key={`nr-${d.id}`}
+                  title={d.title || d.name || 'Untitled'}
+                  posterPath={d.poster_path}
+                  to={`/title/${kind}/${d.id}/tmdb`}
+                  subtitle={(d.release_date || d.first_air_date)?.slice(0, 4)}
+                />
+              );
+            })}
           </PosterRow>
         )}
       </div>

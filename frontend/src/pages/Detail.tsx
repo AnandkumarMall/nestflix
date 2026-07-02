@@ -15,6 +15,7 @@ export default function Detail() {
   const navigate = useNavigate();
   const { activeProfile } = useProfile();
   const [library, setLibrary] = useState<Library | null>(null);
+  const [tmdbItem, setTmdbItem] = useState<Record<string, unknown> | null>(null);
   const [similar, setSimilar] = useState<RecItem[]>([]);
   const [rating, setRating] = useState<1 | -1 | 0>(0);
 
@@ -27,6 +28,15 @@ export default function Detail() {
       .then(setLibrary)
       .catch(() => setLibrary({ movies: [], shows: [] }));
   }, []);
+
+  useEffect(() => {
+    setTmdbItem(null);
+    if (!isTmdbOnly || (kind !== 'movie' && kind !== 'show')) return;
+    const fetch$ = kind === 'movie' ? api.tmdbMovie(numericId) : api.tmdbTv(numericId);
+    Promise.resolve(fetch$)
+      .then(setTmdbItem)
+      .catch(() => setTmdbItem(null));
+  }, [isTmdbOnly, kind, numericId]);
 
   useEffect(() => {
     setRating(0);
@@ -67,10 +77,17 @@ export default function Detail() {
     );
   }
 
-  const item = (movie ?? show) as Movie | Show;
-  const backdrop = imageUrl(item.backdrop_path, 'w780');
-  const title = item.title || item.parsed_title;
-  const genres = parseGenres(item.genres);
+  if (isTmdbOnly && !tmdbItem) {
+    return <div className="page-loading">Loading…</div>;
+  }
+
+  const item = (movie ?? show ?? tmdbItem) as Movie | Show | Record<string, unknown>;
+  const backdrop = imageUrl(
+    (item as any)?.backdrop_path as string | null | undefined,
+    'w780'
+  );
+  const title = (item as any)?.title || (item as any)?.parsed_title || (item as any)?.name;
+  const genres = parseGenres((item as any)?.genres || []);
   const inLibrary = !!movie || !!show;
 
   function sendRating(value: 1 | -1) {
@@ -95,12 +112,22 @@ export default function Detail() {
         <div className="detail-overlay">
           <h1>{title}</h1>
           <div className="detail-meta">
-            {item.year && <span>{item.year}</span>}
-            {item.rating != null && <span>★ {item.rating.toFixed(1)}</span>}
+            {((item as any)?.year || (item as any)?.release_date?.slice(0, 4) || (item as any)?.first_air_date?.slice(0, 4)) && (
+              <span>{(item as any)?.year || (item as any)?.release_date?.slice(0, 4) || (item as any)?.first_air_date?.slice(0, 4)}</span>
+            )}
+            {(item as any)?.vote_average != null && (
+              <span>★ {Number((item as any).vote_average).toFixed(1)}</span>
+            )}
+            {(item as any)?.rating != null && (
+              <span>★ {Number((item as any).rating).toFixed(1)}</span>
+            )}
             {movie?.runtime && <span>{movie.runtime} min</span>}
+            {(item as any)?.runtime && <span>{(item as any).runtime} min</span>}
             {genres.length > 0 && <span>{genres.join(' · ')}</span>}
           </div>
-          {item.overview && <p className="detail-overview">{item.overview}</p>}
+          {((item as any)?.overview || (item as any)?.description) && (
+            <p className="detail-overview">{(item as any)?.overview || (item as any)?.description}</p>
+          )}
 
           <div className="detail-actions">
             {inLibrary && movie && movie.media_file_id != null && (
