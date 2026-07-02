@@ -19,7 +19,6 @@ from . import tmdb
 from .config import settings
 from .db import init_db
 from .enrich import enrich_library
-from .scanner import scan_library
 from .routes import (
     discovery,
     images,
@@ -29,6 +28,7 @@ from .routes import (
     recommendations,
     stats,
 )
+from .scanner import scan_library
 
 
 @asynccontextmanager
